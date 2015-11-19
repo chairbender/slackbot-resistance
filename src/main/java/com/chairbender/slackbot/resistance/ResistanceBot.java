@@ -85,6 +85,8 @@ public class ResistanceBot {
                     if (message.contains("join")) {
                         if (!registerPlayer(event.getSender())) {
                             sendPublicMessageToPlayer(event.getSender().getUserName(),"You have already joined.");
+                        } else {
+                            sendPublicMessageToPlayer(event.getSender().getUserName()," is playing.");
                         }
                     } else if (message.contains("done")) {
                         //start the game, send out all the player roles
@@ -103,6 +105,7 @@ public class ResistanceBot {
      * current leader know who they are
      */
     private void startGame() {
+        sendPrompt("The game has begun. The players are " + GameMessageUtil.listPeople(playerUsernames));
         PreGameState preGameState = new PreGameState();
         pickTeamState = preGameState.startGame(Player.createFromUserNames(playerUsernames));
 
