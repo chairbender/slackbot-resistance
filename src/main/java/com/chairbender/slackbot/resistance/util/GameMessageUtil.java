@@ -3,6 +3,7 @@ package com.chairbender.slackbot.resistance.util;
 import com.chairbender.slackbot.resistance.game.model.PlayerCharacter;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -64,6 +65,32 @@ public abstract class GameMessageUtil {
                 result.append(" and " + name);
             } else {
                 result.append(name + ", ");
+                i++;
+            }
+        }
+
+        return result.toString();
+    }
+
+    /**
+     *
+     * @param playerCharacters people to list in the order specified
+     * @return a string listing the order of the specified players like
+     *      person1 -> person2 -> person3
+     */
+    public static String listOrder(List<PlayerCharacter> playerCharacters) {
+        StringBuilder result = new StringBuilder("");
+
+        if (playerCharacters.size() == 1) {
+            return playerCharacters.iterator().next().getUserName();
+        }
+
+        int i = 0;
+        for (PlayerCharacter playerCharacter : playerCharacters) {
+            if (i == playerCharacters.size() - 1) {
+                result.append(playerCharacter.getUserName());
+            } else {
+                result.append(playerCharacter.getUserName() + " -> ");
                 i++;
             }
         }

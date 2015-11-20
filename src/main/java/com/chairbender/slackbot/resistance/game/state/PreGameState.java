@@ -42,9 +42,7 @@ public class PreGameState {
         Collections.shuffle(playerCharacters);
         PlayerCharacter leader = playerCharacters.get(0);
 
-        Set<PlayerCharacter> playerCharactersSet = new HashSet<>();
-        playerCharactersSet.addAll(playerCharacters);
-        Situation gameStartedSituation = new Situation(playerCharactersSet,leader,1);
+        Situation gameStartedSituation = new Situation(playerCharacters,leader,null,1);
 
         return new PickTeamState(gameStartedSituation);
     }

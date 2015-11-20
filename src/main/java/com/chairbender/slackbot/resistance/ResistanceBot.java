@@ -2,7 +2,6 @@ package com.chairbender.slackbot.resistance;
 
 import com.chairbender.slackbot.resistance.game.model.Player;
 import com.chairbender.slackbot.resistance.game.model.PlayerCharacter;
-import com.chairbender.slackbot.resistance.game.state.PickTeamState;
 import com.chairbender.slackbot.resistance.game.state.PreGameState;
 import com.chairbender.slackbot.resistance.model.ResistanceMessage;
 import com.chairbender.slackbot.resistance.util.GameMessageUtil;
@@ -15,6 +14,7 @@ import com.ullink.slack.simpleslackapi.listeners.SlackMessagePostedListener;
 import com.ullink.slack.simpleslackapi.replies.SlackChannelReply;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -24,31 +24,9 @@ import java.util.Set;
  *
  * Created by chairbender on 11/18/2015.
  */
-//TODO: Develop a "test mode" where one person can play all the roles. Ignore actual usernames, use the first
-    //word in the sentence as the actual username
+//word in the sentence as the actual username
 public class ResistanceBot {
-    private boolean isTestingMode;
-    //tracks the username of the player who is using testing mode
-    private String testingModeUserName;
-    private String botName;
-    private SlackSession session;
-    private BotState state;
-    //tracks the last message
-    private String lastMessage;
-    //tracks the players in the game
-    private Set<String> playerUsernames;
-    //tracks the channel the game was started in
-    private SlackChannel gameChannel;
-    private enum BotState {
-        WAITING_TO_START,
-        REGISTRATION
-    }
-
-    //All the various game states. Looks messy, but it works. Each state is its own, self-contained
-    //game situation. They can have arbitrary action methods. We could create a single Object and then cast
-    //it to the appropriate state when checking, but it's more readable to just have typed objects even
-    //though it clutters up our field definitions
-    PickTeamState pickTeamState;
+    private BotState botState;
 
     /**
      *
@@ -58,57 +36,144 @@ public class ResistanceBot {
      *                      mode, the actual slack username is ignored and instead the first word is treated as the username.
      */
     public ResistanceBot(SlackSession session, String botName, boolean isTestingMode) {
-        this.botName = botName;
-        this.session = session;
-        this.state = BotState.WAITING_TO_START;
-        this.isTestingMode = isTestingMode;
+        botState = new BotState(session,botName,isTestingMode);
     }
 
     /**
      * Starts running and listening for messages
      */
     public void run() throws IOException {
-        session.addMessagePostedListener(new SlackMessagePostedListener() {
+        botState.setMessagePostedListener(new SlackMessagePostedListener() {
             @Override
             public void onEvent(SlackMessagePosted postedEvent, SlackSession session) {
-                ResistanceMessage resistanceMessage = ResistanceMessage.fromSlackMessagePosted(postedEvent, isTestingMode);
+                ResistanceMessage resistanceMessage = ResistanceMessage.fromSlackMessagePosted(postedEvent, botState.isTestingMode());
 
                 String message = resistanceMessage.getMessage();
                 SlackChannel channel = resistanceMessage.getChannel();
                 //ignore own messages
-                if (postedEvent.getSender().getUserName().equals(botName)) {
+                if (postedEvent.getSender().getUserName().equals(botState.getBotName())) {
                     return;
                 }
-                if (state.equals(BotState.WAITING_TO_START)) {
+                if ( botState.getState().equals(BotState.State.WAITING_TO_START)){
                     //start the game when instructed
-                    if (postedEvent.getMessageContent().startsWith(botName)) {
+                    if (postedEvent.getMessageContent().startsWith(botState.getBotName())) {
                         if (message.contains("start")) {
-                            startRegistration(channel);
-                            testingModeUserName = postedEvent.getSender().getUserName();
-                            sendPrompt("A game of The Resistance is starting. Type 'join' to join in. " +
+                            botState.startRegistration(channel);
+                            botState.setTestingUserName(postedEvent.getSender().getUserName());
+                            botState.sendPrompt("A game of The Resistance is starting. Type 'join' to join in. " +
                                     "Type 'done' when everyone who wants to play has joined.");
                         } else {
-                            session.sendMessage(channel, "Say '" + botName + " start' to start a game of The Resistance.", null);
+                            session.sendMessage(channel, "Say '" + botState.getBotName() + " start' to start a game of The Resistance.", null);
                         }
                     }
 
-                } else if (state.equals(BotState.REGISTRATION)) {
+                }else if (botState.getState().equals(BotState.State.REGISTRATION)) {
                     if (message.contains("join")) {
-                        if (!registerPlayer(resistanceMessage.getSender())) {
-                            sendPublicMessageToPlayer(resistanceMessage.getSender(), "You have already joined.");
+                        if (!botState.registerPlayer(resistanceMessage.getSender())) {
+                            botState.sendPublicMessageToPlayer(resistanceMessage.getSender(), "You have already joined.");
                         } else {
-                            sendPublicMessageToPlayer(resistanceMessage.getSender(), " is playing.");
+                            botState.sendPublicMessageToPlayer(resistanceMessage.getSender(), " is playing.");
                         }
                     } else if (message.contains("done")) {
                         //start the game, send out all the player roles
                         startGame();
 
                     }
+                } else if (botState.getState().equals(BotState.State.PICK_TEAM)) {
+                    //only listen to the leader right now
+                    if (resistanceMessage.getSender().equals(botState.getLeaderUserName())) {
+                        if (resistanceMessage.getMessage().startsWith("pick")) {
+                            String chosenUsername = resistanceMessage.getMessage().replace("pick ", "").trim();
+                            //confirm it is a player in the game
+                            if (!botState.isPlayer(chosenUsername)) {
+                                botState.sendPublicMessageToPlayer(resistanceMessage.getSender(),
+                                        "I don't recognize the player called " + chosenUsername + ".");
+                            } else if (botState.isPlayerOnTeam(chosenUsername)) {
+                                //confirm the player isn't already chosen
+                                botState.sendPublicMessageToPlayer(resistanceMessage.getSender(),
+                                        "That player, " + chosenUsername + ", is already on the team.");
+                            } else if (botState.isTeamFull()) {
+                                //confirm there aren't too many team members
+                                botState.sendPublicMessageToPlayer(resistanceMessage.getSender(),
+                                        "The team is already full. Please 'drop' somebody first.");
+                            } else {
+                                //add the player and report the current team
+                                botState.addTeamMember(chosenUsername);
+                            }
+
+                            botState.sendPublicMessage("Added " + chosenUsername + " to the team.\n");
+                            reportTeamSelection();
+                        } else if (resistanceMessage.getMessage().startsWith("drop")) {
+                            String chosenUsername = resistanceMessage.getMessage().replace("drop ", "").trim();
+                            if (chosenUsername.isEmpty()) {
+                                botState.sendPublicMessage("Dropping all members of the current team.");
+                            } else {
+                                if (!botState.isPlayer(chosenUsername)) {
+                                    //confirm it is a player in the game
+                                    botState.sendPublicMessageToPlayer(resistanceMessage.getSender(),
+                                            "I don't recognize the player called " + chosenUsername + ".");
+                                } else if (!botState.isPlayerOnTeam(chosenUsername)) {
+                                    //confirm the player is on the team
+                                    botState.sendPublicMessageToPlayer(resistanceMessage.getSender(),
+                                            "That player, " + chosenUsername + ", is not on the team.");
+
+                                } else {
+                                    //drop the player and report the current team./
+                                    botState.removeTeamMember(chosenUsername);
+                                }
+                            }
+                            reportTeamSelection();
+                        } else if (resistanceMessage.getMessage().startsWith("done")) {
+                            //check that the team is valid
+                            if (botState.isTeamFull()) {
+                                //advance to the next state with the team locked in
+                                pickTeam();
+                            } else {
+                                botState.sendPublicMessageToPlayer(resistanceMessage.getSender(),
+                                        "The team has only " + botState.getTeamSize() + " members." +
+                                                " You need " + botState.getRequiredTeamSize());
+                            }
+                        }
+                    }
+                } else if (botState.getState().equals(BotState.State.VOTE_TEAM)) {
+                    //check if this is a direct message
+                    if (resistanceMessage.getChannel().isDirect()) {
+                        String senderUserName = resistanceMessage.getSender();
+                        String vote = resistanceMessage.getMessage().replace(senderUserName, "").trim();
+                        //check if they haven't already voted
+                        if (botState.hasPlayerVoted(senderUserName)) {
+                            botState.sendPrivateMessageToPlayer(senderUserName,
+                                    "You have already voted.");
+                        } else if (vote.equalsIgnoreCase("no") || vote.equalsIgnoreCase("yes")) {
+                            botState.sendPrivateMessageToPlayer(senderUserName,
+                                    "Please vote only 'yes' or 'no'.");
+                        } else {
+                            //register the vote
+                            botState.placeVote(senderUserName,vote.equalsIgnoreCase("yes"));
+                            botState.sendPrivateMessageToPlayer(senderUserName, "Thank you. Your vote has been accepted.");
+                            if (botState.allVotesSubmitted()) {
+                                //done, lock in the votes
+                                voteTeam();
+                            }
+                        }
+
+                    }
                 }
 
             }
         });
-        session.connect();
+        botState.connectToSlack();
+
+    }
+
+    private synchronized BotState getBotState() {
+        return botState;
+    }
+
+    /**
+     * accept the current vote for the team. Change the leader or start the mission.
+     */
+    private void voteTeam() {
 
     }
 
@@ -117,94 +182,56 @@ public class ResistanceBot {
      * current leader know who they are
      */
     private void startGame() {
-        sendPrompt("The game has begun. The players are " + GameMessageUtil.listPeople(playerUsernames));
-        PreGameState preGameState = new PreGameState();
-        pickTeamState = preGameState.startGame(Player.createFromUserNames(playerUsernames));
+        botState.startGame();
 
-        Set<PlayerCharacter> spies = pickTeamState.getSituation().getSpies();
-        for (PlayerCharacter gameCharacter : pickTeamState.getSituation().getPlayerCharacters()) {
+        botState.sendPrompt("The game has begun. The players are " + GameMessageUtil.listPeople(botState.getPlayerUserNames()));
+
+        Set<PlayerCharacter> spies = botState.getSpies();
+        for (PlayerCharacter gameCharacter : botState.getPlayerCharacters()) {
             //tell the roles
             if (gameCharacter.isResistance()) {
-                sendPrivateMessageToPlayer(gameCharacter.getUserName(),"You are a member of the resistance. If " +
+                botState.sendPrivateMessageToPlayer(gameCharacter.getUserName(), "You are a member of the resistance. If " +
                         " three missions succeed, you win! You're" +
                         " on the side of good. Hooray for you!");
             } else {
-                sendPrivateMessageToPlayer(gameCharacter.getUserName(), "You are a spy along with " +
+                botState.sendPrivateMessageToPlayer(gameCharacter.getUserName(), "You are a spy along with " +
                         GameMessageUtil.listOtherPeople(spies, gameCharacter.getUserName()) + ".");
             }
         }
 
         //announce the leader
-        sendPrompt("Attention " + pickTeamState.getSituation().getLeader().getUserName() + "! You are the current leader. " +
-                "Pick " + pickTeamState.getSituation().getRequiredTeamSize() + " people to be on the team for the next mission." +
-                "Use 'pick <username>' to add someone to the team. Use 'drop <username>' to remove them. " +
-                "Or just say 'drop' to remove everyone. Can't decide? Use 'random' to pick a random team. Remember, you " +
+        botState.sendPrompt("Attention " + botState.getLeaderUserName() + "! You are the current leader. \n" +
+                "Pick " + botState.getRequiredTeamSize() + " people to be on the team for the next mission.\n" +
+                "Use 'pick <username>' to add someone to the team. \nUse 'drop <username>' to remove them, " +
+                "or just say 'drop' to remove everyone. Say 'done' to lock in your choices and let everyone vote on your choice." +
+                "\nRemember, you " +
                 "can pick yourself as a team member.");
     }
 
     /**
-     * Sends a direct message to the user.
-     *
-     * @param userName user to send the direct message to
-     * @param message to send
+     * locks in the current team selection and moves to the next state
      */
-    private void sendPrivateMessageToPlayer(String userName, String message) {
-        SlackUser user;
-        if (isTestingMode) {
-            user = session.findUserByUserName(testingModeUserName);
-        } else {
-            user = session.findUserByUserName(userName);
-        }
-        SlackMessageHandle<SlackChannelReply> openDirectHandle = session.openDirectMessageChannel(user);
-        SlackChannel directChannel = openDirectHandle.getReply().getSlackChannel();
-        session.sendMessage(directChannel,message,null);
+    private void pickTeam() {
+        reportTeamSelection();
+        botState.sendPrompt("The team has been set. Everybody, vote on whether you want this team to run the mission.\n" +
+                "Send me a direct message of 'no' or 'yes' to vote.\n" +
+                "If the majority votes yes, the mission will continue.\n" +
+                "If it ties or a majority votes no, the team leader will be advanced to the next player in the rotation.\n" +
+                "I will announce all votes once they are all submitted.");
+        botState.sendPublicMessage("The leader rotation is " + GameMessageUtil.listOrder(botState.getPlayerCharacters()));
     }
 
     /**
-     * Requires that the gameChannel has already been set.
-     * Sends a message in the game channel, @replying to the specified sender.
-     *
-     * @param recipient the person to @ reply
-     * @param message the message to send them
+     * reports the currently selected team members in the public channel
      */
-    private void sendPublicMessageToPlayer(String recipient, String message) {
-        session.sendMessage(gameChannel, "@" + recipient + " " + message,null);
-    }
-
-    /**
-     *
-     * @param username slack username to register in the game (if testing mode, this can be a made up username)
-     * @return true if the user isn't already registered using this method. false otherwise
-     */
-    private boolean registerPlayer(String username) {
-        if (playerUsernames.contains(username)) {
-            return false;
+    private void reportTeamSelection() {
+        if (botState.getTeamSize() == 0) {
+            botState.sendPublicMessage("The team is empty.");
+        } else if (botState.getTeamSize() == 1) {
+            botState.sendPublicMessage("Only " + botState.getTeam().iterator().next() + " is on the team.");
         } else {
-            playerUsernames.add(username);
-            return true;
+            botState.sendPublicMessage("The current team is " + GameMessageUtil.listPeople(botState.getTeam()));
         }
     }
 
-    /**
-     * Switches to a state in which it will listen for player registration
-     * @param gameChannel channel the game was started in which should be used for all public
-     *                    communication.
-     */
-    private void startRegistration(SlackChannel gameChannel) {
-        state = BotState.REGISTRATION;
-        playerUsernames = new HashSet<>();
-        this.gameChannel = gameChannel;
-    }
-
-    /**
-     * Sends the message to all players. Intended to be use for prompts that need to be repeated
-     * if people aren't sure what to do. Tracks 'message' as the last message sent. Sends the
-     * message out via the gameChannel (the channel that the game was started in)
-     * Requires that the gameChannel has already been set.
-     * @param message message to send.
-     */
-    private void sendPrompt(String message) {
-        session.sendMessage(gameChannel,message,null);
-        lastMessage = message;
-    }
 }
