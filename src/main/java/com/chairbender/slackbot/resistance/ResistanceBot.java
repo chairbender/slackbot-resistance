@@ -4,6 +4,7 @@ import com.chairbender.slackbot.resistance.game.model.Player;
 import com.chairbender.slackbot.resistance.game.model.PlayerCharacter;
 import com.chairbender.slackbot.resistance.game.state.PickTeamState;
 import com.chairbender.slackbot.resistance.game.state.PreGameState;
+import com.chairbender.slackbot.resistance.model.ResistanceMessage;
 import com.chairbender.slackbot.resistance.util.GameMessageUtil;
 import com.ullink.slack.simpleslackapi.SlackChannel;
 import com.ullink.slack.simpleslackapi.SlackMessageHandle;
@@ -13,7 +14,8 @@ import com.ullink.slack.simpleslackapi.events.SlackMessagePosted;
 import com.ullink.slack.simpleslackapi.listeners.SlackMessagePostedListener;
 import com.ullink.slack.simpleslackapi.replies.SlackChannelReply;
 
-import java.util.Collections;
+import java.io.IOException;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -25,6 +27,9 @@ import java.util.Set;
 //TODO: Develop a "test mode" where one person can play all the roles. Ignore actual usernames, use the first
     //word in the sentence as the actual username
 public class ResistanceBot {
+    private boolean isTestingMode;
+    //tracks the username of the player who is using testing mode
+    private String testingModeUserName;
     private String botName;
     private SlackSession session;
     private BotState state;
@@ -49,31 +54,37 @@ public class ResistanceBot {
      *
      * @param session session to use to connect to slack
      * @param botName name of the bot configured in slack
+     * @param isTestingMode whether to enable testing mode, where one player can play as many other player. In testing
+     *                      mode, the actual slack username is ignored and instead the first word is treated as the username.
      */
-    public ResistanceBot(SlackSession session, String botName) {
+    public ResistanceBot(SlackSession session, String botName, boolean isTestingMode) {
         this.botName = botName;
         this.session = session;
         this.state = BotState.WAITING_TO_START;
+        this.isTestingMode = isTestingMode;
     }
 
     /**
      * Starts running and listening for messages
      */
-    public void run() {
+    public void run() throws IOException {
         session.addMessagePostedListener(new SlackMessagePostedListener() {
             @Override
-            public void onEvent(SlackMessagePosted event, SlackSession session) {
-                String message = event.getMessageContent();
-                SlackChannel channel = event.getChannel();
+            public void onEvent(SlackMessagePosted postedEvent, SlackSession session) {
+                ResistanceMessage resistanceMessage = ResistanceMessage.fromSlackMessagePosted(postedEvent, isTestingMode);
+
+                String message = resistanceMessage.getMessage();
+                SlackChannel channel = resistanceMessage.getChannel();
                 //ignore own messages
-                if (event.getSender().getUserName().equals(botName)) {
+                if (postedEvent.getSender().getUserName().equals(botName)) {
                     return;
                 }
                 if (state.equals(BotState.WAITING_TO_START)) {
                     //start the game when instructed
-                    if (message.startsWith(botName)) {
+                    if (postedEvent.getMessageContent().startsWith(botName)) {
                         if (message.contains("start")) {
                             startRegistration(channel);
+                            testingModeUserName = postedEvent.getSender().getUserName();
                             sendPrompt("A game of The Resistance is starting. Type 'join' to join in. " +
                                     "Type 'done' when everyone who wants to play has joined.");
                         } else {
@@ -83,10 +94,10 @@ public class ResistanceBot {
 
                 } else if (state.equals(BotState.REGISTRATION)) {
                     if (message.contains("join")) {
-                        if (!registerPlayer(event.getSender())) {
-                            sendPublicMessageToPlayer(event.getSender().getUserName(),"You have already joined.");
+                        if (!registerPlayer(resistanceMessage.getSender())) {
+                            sendPublicMessageToPlayer(resistanceMessage.getSender(), "You have already joined.");
                         } else {
-                            sendPublicMessageToPlayer(event.getSender().getUserName()," is playing.");
+                            sendPublicMessageToPlayer(resistanceMessage.getSender(), " is playing.");
                         }
                     } else if (message.contains("done")) {
                         //start the game, send out all the player roles
@@ -97,6 +108,7 @@ public class ResistanceBot {
 
             }
         });
+        session.connect();
 
     }
 
@@ -124,7 +136,7 @@ public class ResistanceBot {
 
         //announce the leader
         sendPrompt("Attention " + pickTeamState.getSituation().getLeader().getUserName() + "! You are the current leader. " +
-                "Pick " + pickTeamState.getSituation().getTeamSize() + " people to be on the team for the next mission." +
+                "Pick " + pickTeamState.getSituation().getRequiredTeamSize() + " people to be on the team for the next mission." +
                 "Use 'pick <username>' to add someone to the team. Use 'drop <username>' to remove them. " +
                 "Or just say 'drop' to remove everyone. Can't decide? Use 'random' to pick a random team. Remember, you " +
                 "can pick yourself as a team member.");
@@ -137,7 +149,12 @@ public class ResistanceBot {
      * @param message to send
      */
     private void sendPrivateMessageToPlayer(String userName, String message) {
-        SlackUser user = session.findUserByUserName(userName);
+        SlackUser user;
+        if (isTestingMode) {
+            user = session.findUserByUserName(testingModeUserName);
+        } else {
+            user = session.findUserByUserName(userName);
+        }
         SlackMessageHandle<SlackChannelReply> openDirectHandle = session.openDirectMessageChannel(user);
         SlackChannel directChannel = openDirectHandle.getReply().getSlackChannel();
         session.sendMessage(directChannel,message,null);
@@ -156,14 +173,14 @@ public class ResistanceBot {
 
     /**
      *
-     * @param sender slack user to register in the game
+     * @param username slack username to register in the game (if testing mode, this can be a made up username)
      * @return true if the user isn't already registered using this method. false otherwise
      */
-    private boolean registerPlayer(SlackUser sender) {
-        if (playerUsernames.contains(sender.getUserName())) {
+    private boolean registerPlayer(String username) {
+        if (playerUsernames.contains(username)) {
             return false;
         } else {
-            playerUsernames.add(sender.getUserName());
+            playerUsernames.add(username);
             return true;
         }
     }
@@ -175,6 +192,7 @@ public class ResistanceBot {
      */
     private void startRegistration(SlackChannel gameChannel) {
         state = BotState.REGISTRATION;
+        playerUsernames = new HashSet<>();
         this.gameChannel = gameChannel;
     }
 

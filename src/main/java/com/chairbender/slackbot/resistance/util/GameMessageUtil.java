@@ -24,22 +24,50 @@ public abstract class GameMessageUtil {
         StringBuilder result = new StringBuilder("");
 
         Set<String> otherNames = people.stream().filter(character -> !character.getUserName().equals(exclude)).map(PlayerCharacter::getUserName).collect(Collectors.toSet());
+        if (otherNames.size() == 1) {
+            return otherNames.iterator().next();
+        } else if (otherNames.size() == 2) {
+            return otherNames.iterator().next() + " and " + otherNames.iterator().next();
+        }
 
         int i = 0;
         for (String name : otherNames) {
-            if (i == otherNames.size()) {
+            if (i == otherNames.size() - 1) {
                 result.append(" and " + name);
+            } else {
+                result.append(name + ", ");
+                i++;
             }
-            result.append(name + ", ");
-            i++;
         }
-        String resultString = result.toString();
-        if (otherNames.size() == 2) {
-            resultString.replace(",","");
+
+        return  result.toString();
+    }
+
+    /**
+     *
+     * @param playerUsernames usernames to list with a comma and and
+     * @return string listing of the usernames in a grammatically correct format that can be inserted into
+     *      a sentence.
+     */
+    public static String listPeople(Set<String> playerUsernames) {
+        StringBuilder result = new StringBuilder("");
+
+        if (playerUsernames.size() == 1) {
+            return playerUsernames.iterator().next();
+        } else if (playerUsernames.size() == 2) {
+            return playerUsernames.iterator().next() + " and " + playerUsernames.iterator().next();
         }
-        if (otherNames.size() == 1) {
-            resultString.replace(", ","");
+
+        int i = 0;
+        for (String name : playerUsernames) {
+            if (i == playerUsernames.size() - 1) {
+                result.append(" and " + name);
+            } else {
+                result.append(name + ", ");
+                i++;
+            }
         }
-        return resultString;
+
+        return result.toString();
     }
 }
