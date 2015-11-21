@@ -36,8 +36,6 @@ public class SlackBotResistance {
         //start up a server that serves up a small information page
         Server server = new Server(Integer.parseInt(port));
         server.setHandler(new InfoPageHandler());
-        server.start();
-        server.join();
 
         SlackSession session = SlackSessionFactory.createWebSocketSlackSession(apiToken);
         //add a listener to pick up when to start a game
@@ -93,6 +91,8 @@ public class SlackBotResistance {
             }
         });
         session.connect();
+        server.start();
+        server.join();
     }
 
 }
