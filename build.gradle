@@ -7,7 +7,7 @@ repositories {
 }
 
 task copyToLib(type: Copy) {
-    into "$buildDir/lib"
+    into "$buildDir/libs"
     from(configurations.compile)
 }
 

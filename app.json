@@ -5,7 +5,7 @@
   "keywords": ["resistance", "slack", "game", "bot"],
   "env": {
     "API_TOKEN": {
-      "description": "The Slack API key. Get it at https://api.slack.com/web",
+      "description": "The Slack API key. Get it at https://cirrusten.slack.com/services, create a bot and use the provided api token for that bot.",
       "required": true
     },
     "BOT_USERNAME": {
