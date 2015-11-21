@@ -20,6 +20,7 @@ stage.dependsOn(copyToLib)
 
 dependencies {
     compile 'com.github.Ullink:simple-slack-api:2ec3a0ac7e'
+    compile 'org.eclipse.jetty:jetty-server:9.3.6.v20151106'
 }
 
 

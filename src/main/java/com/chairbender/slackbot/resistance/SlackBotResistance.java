@@ -1,11 +1,11 @@
 package com.chairbender.slackbot.resistance;
 
-import com.ullink.slack.simpleslackapi.SlackChannel;
-import com.ullink.slack.simpleslackapi.SlackMessageHandle;
+import com.chairbender.slackbot.resistance.server.handler.InfoPageHandler;
 import com.ullink.slack.simpleslackapi.SlackSession;
 import com.ullink.slack.simpleslackapi.events.SlackMessagePosted;
 import com.ullink.slack.simpleslackapi.impl.SlackSessionFactory;
 import com.ullink.slack.simpleslackapi.listeners.SlackMessagePostedListener;
+import org.eclipse.jetty.server.Server;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -25,11 +25,19 @@ public class SlackBotResistance {
      * 0 - slack api token
      * 1 - name you want this bot to respond to (i.e. "resistbot" or whatever you chose when creating the bot)
      * 2 - 'true' or 'false' - whether you want to set it to testing mode, where one player controls multiple characters
+     * 3 - port to run bind to for serving up the info HTML page
      */
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws Exception {
         String apiToken = args[0];
         String botName = args[1];
         boolean testingMode = args[2].equalsIgnoreCase("true");
+        String port = args[3];
+
+        //start up a server that serves up a small information page
+        Server server = new Server(Integer.parseInt(port));
+        server.setHandler(new InfoPageHandler());
+        server.start();
+        server.join();
 
         SlackSession session = SlackSessionFactory.createWebSocketSlackSession(apiToken);
         //add a listener to pick up when to start a game
@@ -79,7 +87,7 @@ public class SlackBotResistance {
                 } else {
                     //allow all running bots to handle the message
                     for (ResistanceBot bot : channelIDsToResistanceBots.values()) {
-                        bot.onMessagePosted(event, session);
+                        bot.onMessagePosted(event);
                     }
                 }
             }

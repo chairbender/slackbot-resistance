@@ -10,12 +10,10 @@ A Slack bot for playing a game of The Resistance, a social deduction game for 5 
 
 1. Set up a Slack bot. In Slack, select "Configure Integrations". Select the "Configured Integrations Tab".
 Expand "Bots" and click "Add". Give it a name like "resistbot". Save that API Token for the next steps.
+![](http://i.imgur.com/knODtaX.png)
 2. Click this button to set up a Heroku app to run the bot: [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy).
   * For the API_TOKEN variable, paste the API Token you copied from step 1 for the bot integration. For the BOT_USERNAME, use the name you gave to the bot in step 1.
-3. Turn on the bot. When done deploying, click the "Manage App" button. Click the "Resources" tab. Click the 
-pencil icon on the "bot" dyno. Click the switch to turn it on. Click "Confirm".
-![](http://i.imgur.com/U1nDzt4.png)
-4. With the Heroku app running, invite the bot to any channels you want it to listen on.
+3. With the Heroku app running, invite the bot to any channels you want it to listen on.
 
 ## Usage
 * 'resistbot' (assuming you called it 'resistbot') in any channel the bot is in and it will tell you what you can do

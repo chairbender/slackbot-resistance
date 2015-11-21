@@ -1,30 +1,20 @@
 package com.chairbender.slackbot.resistance;
 
-import com.chairbender.slackbot.resistance.game.model.Player;
 import com.chairbender.slackbot.resistance.game.model.PlayerCharacter;
-import com.chairbender.slackbot.resistance.game.state.PreGameState;
 import com.chairbender.slackbot.resistance.model.ResistanceMessage;
 import com.chairbender.slackbot.resistance.util.GameMessageUtil;
 import com.ullink.slack.simpleslackapi.SlackChannel;
-import com.ullink.slack.simpleslackapi.SlackMessageHandle;
 import com.ullink.slack.simpleslackapi.SlackSession;
-import com.ullink.slack.simpleslackapi.SlackUser;
 import com.ullink.slack.simpleslackapi.events.SlackMessagePosted;
-import com.ullink.slack.simpleslackapi.listeners.SlackMessagePostedListener;
-import com.ullink.slack.simpleslackapi.replies.SlackChannelReply;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Set;
 
 /**
  * Encapsulates all of the logic of the bot. Represents a single bot running a game in a single public channel. Not
  * intended to run multiple games. This bot does NOT directly create a listener with the websocket. It relies on
  * a parent class using getSlackMessagePostedListener() and invoking that when necessary.
- * <p>
- * <p>
- * <p>
+
  * Created by chairbender on 11/18/2015.
  */
 //word in the sentence as the actual username
@@ -50,11 +40,10 @@ public class ResistanceBot {
     /**
      * Make sure this gets invoked when a slack message occurs. Causes this bot to listen and respond to messages
      */
-    public void onMessagePosted(SlackMessagePosted postedEvent, SlackSession session) {
+    public void onMessagePosted(SlackMessagePosted postedEvent) {
         ResistanceMessage resistanceMessage = ResistanceMessage.fromSlackMessagePosted(postedEvent, botState.isTestingMode());
 
         String message = resistanceMessage.getMessage();
-        SlackChannel channel = resistanceMessage.getChannel();
         //ignore own messages, messages in other public channels (unless they are direct)
         if (postedEvent.getSender().getUserName().equals(botState.getBotName()) ||
                 (!postedEvent.getChannel().isDirect() && !postedEvent.getChannel().getId().equals(botState.getPublicChannel().getId()))) {
