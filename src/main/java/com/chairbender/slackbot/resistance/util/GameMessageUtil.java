@@ -3,6 +3,7 @@ package com.chairbender.slackbot.resistance.util;
 import com.chairbender.slackbot.resistance.game.model.PlayerCharacter;
 
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -56,7 +57,8 @@ public abstract class GameMessageUtil {
         if (playerUsernames.size() == 1) {
             return playerUsernames.iterator().next();
         } else if (playerUsernames.size() == 2) {
-            return playerUsernames.iterator().next() + " and " + playerUsernames.iterator().next();
+            Iterator<String> playersIterator = playerUsernames.iterator();
+            return playersIterator.next() + " and " + playersIterator.next();
         }
 
         int i = 0;
@@ -91,6 +93,35 @@ public abstract class GameMessageUtil {
                 result.append(playerCharacter.getUserName());
             } else {
                 result.append(playerCharacter.getUserName() + " -> ");
+                i++;
+            }
+        }
+
+        return result.toString();
+    }
+
+    /**
+     *
+     * @param playerCharacters players to list with a comma and 'and'
+     * @return string listing of the usernames in a grammatically correct format that can be inserted into
+     *      a sentence.
+     */
+    public static String listPeoplePlayerCharacters(Set<PlayerCharacter> playerCharacters) {
+        StringBuilder result = new StringBuilder("");
+
+        if (playerCharacters.size() == 1) {
+            return playerCharacters.iterator().next().getUserName();
+        } else if (playerCharacters.size() == 2) {
+            Iterator<PlayerCharacter> playersIterator = playerCharacters.iterator();
+            return playersIterator.next().getUserName() + " and " + playersIterator.next().getUserName();
+        }
+
+        int i = 0;
+        for (PlayerCharacter player : playerCharacters) {
+            if (i == playerCharacters.size() - 1) {
+                result.append(" and " + player.getUserName());
+            } else {
+                result.append(player.getUserName() + ", ");
                 i++;
             }
         }

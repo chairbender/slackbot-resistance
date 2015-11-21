@@ -16,6 +16,7 @@ public class Situation {
     private Set<PlayerCharacter> teamMembers;
     //starts from 1 because that's how the game does it. Sorry :-(.
     private int currentRound;
+    private int missionSuccesses;
 
     /**
      *
@@ -23,13 +24,15 @@ public class Situation {
      * @param leader the current leader
      * @param teamMembers the players on the currently selected team
      * @param currentRound the current round.
+     * @param missionSuccesses number of mission successes
      */
 
-    public Situation(List<PlayerCharacter> playerCharacters, PlayerCharacter leader, Set<PlayerCharacter> teamMembers, int currentRound) {
+    public Situation(List<PlayerCharacter> playerCharacters, PlayerCharacter leader, Set<PlayerCharacter> teamMembers, int currentRound, int missionSuccesses) {
         this.playerCharacters = playerCharacters;
         this.leader = leader;
         this.teamMembers = teamMembers;
         this.currentRound = currentRound;
+        this.missionSuccesses = missionSuccesses;
     }
 
 
@@ -91,5 +94,46 @@ public class Situation {
      */
     public void setCurrentTeam(Set<PlayerCharacter> currentTeam) {
         this.teamMembers = currentTeam;
+    }
+
+    /**
+     * move the leader to be the next in the player list
+     */
+    public void advanceLeader() {
+        int leaderIndex = playerCharacters.indexOf(leader);
+        if (leaderIndex == playerCharacters.size() - 1) {
+            leader = playerCharacters.get(0);
+        } else {
+            leader = playerCharacters.get(leaderIndex+1);
+        }
+    }
+
+    /**
+     *
+     * @return number of missions that succeeded
+     */
+    public int getMissionSuccess() {
+        return missionSuccesses;
+    }
+
+    /**
+     *
+     * @return number of missions that failed
+     */
+    public int getMissionFails() {
+        return (currentRound - 1) - missionSuccesses;
+    }
+
+    /**
+     * advance the turn counter and mark the mission as a success or failure
+     * @param success whether the mission succeeded
+     */
+    public void completeMission(boolean success) {
+        currentRound++;
+        missionSuccesses += success ? 1 : 0;
+    }
+
+    public int getRoundNumber() {
+        return currentRound;
     }
 }

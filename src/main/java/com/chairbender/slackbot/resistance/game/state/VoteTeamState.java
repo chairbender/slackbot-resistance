@@ -21,4 +21,26 @@ public class VoteTeamState {
     public Situation getSituation() {
         return situation;
     }
+
+    /**
+     *
+     * @return a domissionstate in which the current team has been accepted and the
+     *      mission members must choose pass / fail
+     */
+    public DoMissionState acceptTeam() {
+
+        return new DoMissionState(situation);
+    }
+
+    /**
+     *
+     * @return a state in which the vote was rejected so the leader advances to the nest
+     *      in the list of players
+     */
+    public PickTeamState rejectTeam() {
+        //switch to the next leader
+        situation.advanceLeader();
+
+        return new PickTeamState(situation);
+    }
 }

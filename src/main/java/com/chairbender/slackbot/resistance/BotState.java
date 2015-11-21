@@ -2,9 +2,7 @@ package com.chairbender.slackbot.resistance;
 
 import com.chairbender.slackbot.resistance.game.model.Player;
 import com.chairbender.slackbot.resistance.game.model.PlayerCharacter;
-import com.chairbender.slackbot.resistance.game.state.PickTeamState;
-import com.chairbender.slackbot.resistance.game.state.PreGameState;
-import com.chairbender.slackbot.resistance.game.state.VoteTeamState;
+import com.chairbender.slackbot.resistance.game.state.*;
 import com.chairbender.slackbot.resistance.util.GameMessageUtil;
 import com.ullink.slack.simpleslackapi.SlackChannel;
 import com.ullink.slack.simpleslackapi.SlackMessageHandle;
@@ -48,13 +46,126 @@ public class BotState {
     private VoteTeamState voteTeamState;
     //tracks the current votes of each player
     private Map<String,Boolean> playerVotes;
+    //tracks the number of successive rejections without a team being accepted
+    private int successiveRejections = 0;
+
+    private DoMissionState doMissionState;
+    //holds the choices of the team members on a given mission (pass or fail)
+    private Map<String,Boolean> teamMemberChoices;
+
+    /**
+     *
+     * @param teamMemberUserName user who is choosing whether to pass / fail
+     * @param pass whether they vote to pass or fail the mission
+     */
+    public void placeMissionChoice(String teamMemberUserName, boolean pass) {
+        teamMemberChoices.put(teamMemberUserName,pass);
+    }
+
+    /**
+     * @param userName username to check
+     * @return true if the player with that username is a spy
+     */
+    public boolean isSpy(String userName) {
+        for (PlayerCharacter playerCharacter : getSpies()) {
+            if (playerCharacter.getUserName().equals(userName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     *
+     * @return true if all mission choices have been submitted via placeMissionChoice
+     */
+    public boolean allMissionChoicesSubmitted() {
+        return teamMemberChoices.size() == teamSelection.size();
+    }
+
+    /**
+     * Remind the players of the current state and the last message. Only works when not waiting to start
+     * and not in the registration state.
+     */
+    public void remind() {
+        if (state != State.REGISTRATION && state != State.WAITING_TO_START) {
+            sendPublicMessage("Round " + pickTeamState.getSituation().getRoundNumber() +
+                    " of 5\n" +
+                    pickTeamState.getSituation().getMissionSuccess() + " successes\n" +
+                    pickTeamState.getSituation().getMissionFails() + " fails\n" +
+                    "The leader rotation is " + GameMessageUtil.listOrder(getPlayerCharacters()) + "\n" +
+                    pickTeamState.getSituation().getLeader().getUserName() + " is the leader.\n\n" +
+                    lastMessage);
+        }
+    }
+
+    /**
+     * removes all members from the current team
+     */
+    public void removeAllTeamMembers() {
+        teamSelection = new HashSet<>();
+    }
+
+    /**
+     * remind the status without repeating the last prompt. only if the bot is not in the registration or waiting
+     * to start state.
+     */
+    public void remindNoRepeat() {
+        if (state != State.REGISTRATION && state != State.WAITING_TO_START) {
+            sendPublicMessage("Round " + pickTeamState.getSituation().getRoundNumber() +
+                    " of 5\n" +
+                    pickTeamState.getSituation().getMissionSuccess() + " successes\n" +
+                    pickTeamState.getSituation().getMissionFails() + " fails\n" +
+                    "The leader rotation is " + GameMessageUtil.listOrder(getPlayerCharacters()) + "\n" +
+                    pickTeamState.getSituation().getLeader().getUserName() + " is the leader.");
+        }
+    }
+
 
     public enum State {
         WAITING_TO_START,
         REGISTRATION,
         PICK_TEAM,
-        VOTE_TEAM
+        VOTE_TEAM,
+        DO_MISSION
     }
+
+    /**
+     * broadcast all the votes on the current team to the public channel
+     */
+    public void reportVotes() {
+        StringBuilder voteReport = new StringBuilder("");
+        for (String playerUsername : playerVotes.keySet()) {
+            voteReport.append(playerUsername).append(": ").append(
+                    playerVotes.get(playerUsername) ? "yes\n" : "no\n");
+        }
+        sendPublicMessage("The votes were:\n" + voteReport.toString());
+    }
+
+    /**
+     * broadcast to the public who the spies were
+     */
+    public void announceSpies() {
+        sendPublicMessage("The spies were " + GameMessageUtil.listPeoplePlayerCharacters(getSpies()) +
+        ".");
+    }
+
+    /**
+     * reset to a state where the bot is waiting for a game to start
+     */
+    public void reset() {
+        state = State.WAITING_TO_START;
+    }
+
+    /**
+     *
+     * @param senderUserName username of player to check
+     * @return true if that player has already chosen pass or fail
+     */
+    public boolean hasTeamMemberChosen(String senderUserName) {
+        return teamMemberChoices.containsKey(senderUserName);
+    }
+
 
     public BotState(SlackSession session, String botName, boolean isTestingMode) {
         this.botName = botName;
@@ -129,6 +240,79 @@ public class BotState {
         voteTeamState = pickTeamState.pickTeam(teamSelection);
         state = State.VOTE_TEAM;
         playerVotes = new HashMap<>();
+    }
+
+    /**
+     * accept the current vote for the team. Change the leader or start the mission.
+     * @return true if the team was accepted and the mission should start. false otherwise
+     */
+    public boolean voteTeam() {
+        //tally the votes
+        int yes = 0, no = 0;
+        for (boolean vote : playerVotes.values()) {
+            if (vote) {
+                yes++;
+            } else {
+                no++;
+            }
+        }
+
+        if (yes > no) {
+            doMissionState = voteTeamState.acceptTeam();
+            state = State.DO_MISSION;
+            successiveRejections = 0;
+            teamMemberChoices = new HashMap<>();
+            return true;
+        } else {
+            pickTeamState = voteTeamState.rejectTeam();
+            state = State.PICK_TEAM;
+            successiveRejections++;
+            teamSelection = new HashSet<>();
+            return false;
+        }
+    }
+
+    /**
+     * completes the current mission. Checks for a victory for the spies or resistance. Changes the leader
+     * and moves to the next round.
+     * @return true if the game has ended
+     */
+    public boolean completeMission() {
+        //determine mission success / fail
+        int numFails = 0;
+        for (boolean choice : teamMemberChoices.values()) {
+            if (!choice) {
+                numFails++;
+            }
+        }
+        if (numFails == 1) {
+            sendPublicMessage("The mission was a failure! There was 1 fail.");
+        } else if (numFails > 1) {
+            sendPublicMessage("The mission was a failure! There were " + numFails + " fails.");
+        } else {
+            sendPublicMessage("The mission was a success!");
+        }
+
+        CompleteMissionState completeMissionState = doMissionState.completeMission(numFails == 0);
+        if (completeMissionState.isGameOver()) {
+            //report the winner
+            if (completeMissionState.didSpiesWin()) {
+                sendPublicMessage("3 missions have failed! Spies win!");
+                announceSpies();
+                sendPublicMessage("Thank you for playing!");
+            } else {
+                sendPublicMessage("3 missions have succeeded! The Resistance wins!");
+                announceSpies();
+                sendPublicMessage("Thank you for playing!");
+            }
+            reset();
+            return true;
+        } else {
+            pickTeamState = completeMissionState.getPickTeamState();
+            state = State.PICK_TEAM;
+            teamSelection = new HashSet<>();
+            return false;
+        }
     }
 
     /**
@@ -308,7 +492,11 @@ public class BotState {
         this.gameChannel = gameChannel;
     }
 
-
-
-
+    /**
+     *
+     * @return the number of team vote rejections this round
+     */
+    public int getSuccessiveRejections() {
+        return successiveRejections;
+    }
 }
