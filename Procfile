@@ -1,1 +1,1 @@
-bot: java -jar build/libs/slackbot-resistance-1.0.jar $API_TOKEN $BOT_USERNAME false
+web: java -jar build/libs/slackbot-resistance-1.0.jar $API_TOKEN $BOT_USERNAME false

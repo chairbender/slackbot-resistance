@@ -13,5 +13,9 @@
       "required": true,
       "value": "resistbot"
     }
-  }
+  },
+  "formation": [
+    { "process": "web",    "quantity": 0},
+    { "process": "bot", "quantity": 1}
+  ]
 }
