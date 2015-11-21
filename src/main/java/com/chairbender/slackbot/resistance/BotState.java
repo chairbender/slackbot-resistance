@@ -58,7 +58,7 @@ public class BotState {
      * @param teamMemberUserName user who is choosing whether to pass / fail
      * @param pass whether they vote to pass or fail the mission
      */
-    public void placeMissionChoice(String teamMemberUserName, boolean pass) {
+    public synchronized void placeMissionChoice(String teamMemberUserName, boolean pass) {
         teamMemberChoices.put(teamMemberUserName,pass);
     }
 
@@ -66,7 +66,7 @@ public class BotState {
      * @param userName username to check
      * @return true if the player with that username is a spy
      */
-    public boolean isSpy(String userName) {
+    public synchronized boolean isSpy(String userName) {
         for (PlayerCharacter playerCharacter : getSpies()) {
             if (playerCharacter.getUserName().equals(userName)) {
                 return true;
@@ -79,7 +79,7 @@ public class BotState {
      *
      * @return true if all mission choices have been submitted via placeMissionChoice
      */
-    public boolean allMissionChoicesSubmitted() {
+    public synchronized boolean allMissionChoicesSubmitted() {
         return teamMemberChoices.size() == teamSelection.size();
     }
 
@@ -87,7 +87,7 @@ public class BotState {
      * Remind the players of the current state and the last message. Only works when not waiting to start
      * and not in the registration state.
      */
-    public void remind() {
+    public synchronized void remind() {
         if (state != State.REGISTRATION && state != State.WAITING_TO_START) {
             sendPublicMessage("Round " + pickTeamState.getSituation().getRoundNumber() +
                     " of 5\n" +
@@ -102,7 +102,7 @@ public class BotState {
     /**
      * removes all members from the current team
      */
-    public void removeAllTeamMembers() {
+    public synchronized void removeAllTeamMembers() {
         teamSelection = new HashSet<>();
     }
 
@@ -110,7 +110,7 @@ public class BotState {
      * remind the status without repeating the last prompt. only if the bot is not in the registration or waiting
      * to start state.
      */
-    public void remindNoRepeat() {
+    public synchronized void remindNoRepeat() {
         if (state != State.REGISTRATION && state != State.WAITING_TO_START) {
             sendPublicMessage("Round " + pickTeamState.getSituation().getRoundNumber() +
                     " of 5\n" +
@@ -121,6 +121,13 @@ public class BotState {
         }
     }
 
+    /**
+     *
+     * return the public channel for this game
+     */
+    public SlackChannel getPublicChannel() {
+        return gameChannel;
+    }
 
     public enum State {
         WAITING_TO_START,
@@ -133,7 +140,7 @@ public class BotState {
     /**
      * broadcast all the votes on the current team to the public channel
      */
-    public void reportVotes() {
+    public synchronized void reportVotes() {
         StringBuilder voteReport = new StringBuilder("");
         for (String playerUsername : playerVotes.keySet()) {
             voteReport.append(playerUsername).append(": ").append(
@@ -145,7 +152,7 @@ public class BotState {
     /**
      * broadcast to the public who the spies were
      */
-    public void announceSpies() {
+    public synchronized void announceSpies() {
         sendPublicMessage("The spies were " + GameMessageUtil.listPeoplePlayerCharacters(getSpies()) +
         ".");
     }
@@ -153,7 +160,7 @@ public class BotState {
     /**
      * reset to a state where the bot is waiting for a game to start
      */
-    public void reset() {
+    public synchronized void reset() {
         state = State.WAITING_TO_START;
     }
 
@@ -162,16 +169,18 @@ public class BotState {
      * @param senderUserName username of player to check
      * @return true if that player has already chosen pass or fail
      */
-    public boolean hasTeamMemberChosen(String senderUserName) {
+    public synchronized boolean hasTeamMemberChosen(String senderUserName) {
         return teamMemberChoices.containsKey(senderUserName);
     }
 
 
-    public BotState(SlackSession session, String botName, boolean isTestingMode) {
+    public BotState(SlackSession session, String botName, SlackChannel publicChannel, boolean isTestingMode, String testingModeUserName) {
         this.botName = botName;
         this.session = session;
         this.state = State.WAITING_TO_START;
         this.isTestingMode = isTestingMode;
+        this.gameChannel = publicChannel;
+        this.testingModeUserName = testingModeUserName;
     }
 
     public synchronized boolean isTestingMode() {
@@ -208,14 +217,6 @@ public class BotState {
     }
 
     /**
-     * Connects to slack and starts using the configured listeners
-     * @throws IOException if error occurs connecting with slack
-     */
-    public void connectToSlack() throws IOException {
-        session.connect();
-    }
-
-    /**
      *
      * @return the usernames of the players in the game. Do not modify the returned set or you'll be sorry.
      */
@@ -246,7 +247,7 @@ public class BotState {
      * accept the current vote for the team. Change the leader or start the mission.
      * @return true if the team was accepted and the mission should start. false otherwise
      */
-    public boolean voteTeam() {
+    public synchronized boolean voteTeam() {
         //tally the votes
         int yes = 0, no = 0;
         for (boolean vote : playerVotes.values()) {
@@ -277,7 +278,7 @@ public class BotState {
      * and moves to the next round.
      * @return true if the game has ended
      */
-    public boolean completeMission() {
+    public synchronized boolean completeMission() {
         //determine mission success / fail
         int numFails = 0;
         for (boolean choice : teamMemberChoices.values()) {
@@ -483,20 +484,17 @@ public class BotState {
 
     /**
      * Switches to a state in which it will listen for player registration
-     * @param gameChannel channel the game was started in which should be used for all public
-     *                    communication.
      */
-    public synchronized void startRegistration(SlackChannel gameChannel) {
+    public synchronized void startRegistration() {
         state = State.REGISTRATION;
         playerUsernames = new HashSet<>();
-        this.gameChannel = gameChannel;
     }
 
     /**
      *
      * @return the number of team vote rejections this round
      */
-    public int getSuccessiveRejections() {
+    public synchronized int getSuccessiveRejections() {
         return successiveRejections;
     }
 }
