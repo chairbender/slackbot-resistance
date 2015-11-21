@@ -14,6 +14,7 @@ Expand "Bots" and click "Add". Give it a name like "resistbot". Save that API To
   * For the API_TOKEN variable, paste the API Token you copied from step 1 for the bot integration. For the BOT_USERNAME, use the name you gave to the bot in step 1.
 3. Turn on the bot. When done deploying, click the "Manage App" button. Click the "Resources" tab. Click the 
 pencil icon on the "bot" dyno. Click the switch to turn it on. Click "Confirm".
+![](http://i.imgur.com/U1nDzt4.png)
 4. With the Heroku app running, invite the bot to any channels you want it to listen on.
 
 ## Usage
