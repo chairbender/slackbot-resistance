@@ -1,0 +1,17 @@
+{
+  "name": "ResistBot",
+  "description": "A Slack bot for playing The Resistance",
+  "repository": "https://github.com/chairbender/slackbot-resistance",
+  "keywords": ["resistance", "slack", "game", "bot"],
+  "env": {
+    "API_TOKEN": {
+      "description": "The Slack API key. Get it at https://api.slack.com/web",
+      "required": true
+    },
+    "BOT_USERNAME": {
+      "description": "Name you configured for the bot in the Slack Bot integration.",
+      "required": true,
+      "value": "resistbot"
+    }
+  }
+}

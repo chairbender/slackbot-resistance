@@ -22,15 +22,14 @@ public class SlackBotResistance {
     /**
      *
      * @param args
-     * 0 - slack team name (yourteam.slack.com)
-     * 1 - slack api token
-     * 2 - name you want this bot to respond to (i.e. "resistbot" or whatever you chose when creating the bot)
-     * 3 - 'true' or 'false' - whether you want to set it to testing mode, where one player controls multiple characters
+     * 0 - slack api token
+     * 1 - name you want this bot to respond to (i.e. "resistbot" or whatever you chose when creating the bot)
+     * 2 - 'true' or 'false' - whether you want to set it to testing mode, where one player controls multiple characters
      */
     public static void main(String[] args) throws IOException {
-        String apiToken = args[1];
-        String botName = args[2];
-        boolean testingMode = args[3].equalsIgnoreCase("true");
+        String apiToken = args[0];
+        String botName = args[1];
+        boolean testingMode = args[2].equalsIgnoreCase("true");
 
         SlackSession session = SlackSessionFactory.createWebSocketSlackSession(apiToken);
         //add a listener to pick up when to start a game

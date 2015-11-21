@@ -6,7 +6,27 @@ repositories {
     maven { url "https://jitpack.io" }
 }
 
+task copyToLib(type: Copy) {
+    into "$buildDir/lib"
+    from(configurations.compile)
+}
+
+
+task stage {
+    dependsOn jar
+}
+
+stage.dependsOn(copyToLib)
+
 dependencies {
     compile 'com.github.Ullink:simple-slack-api:2ec3a0ac7e'
-
 }
+
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'com.chairbender.slackbot.resistance.SlackBotResistance'
+        attributes 'Class-Path': configurations.compile.collect { it.getName() }.join(' ')
+    }
+}
+
