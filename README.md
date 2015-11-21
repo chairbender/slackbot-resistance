@@ -22,7 +22,7 @@ pencil icon on the "bot" dyno. Click the switch to turn it on. Click "Confirm".
 * 'resistbot start' to start a game in the current channel. You can run multiple games in different channels. The bot will
 let you know what to do as you play.
 * 'resistbot stop all games' to stop all current games in all channels
-* 'resistbot '
+* 'resistbot stop this game' to stop the game in the current channel
 
 
 ## Contributing
