@@ -4,7 +4,7 @@ A Slack bot for playing a game of The Resistance, a social deduction game for 5 
 ## Requirements
 * A [Slack](https://slack.com) account
 * A free [Heroku](https://www.heroku.com/) account
-* Permission to set up integrations in slack
+* Permission to set up integrations in Slack
 
 ## Installation
 
