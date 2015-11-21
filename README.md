@@ -1,8 +1,6 @@
 # slackbot-resistance
 A Slack bot for playing a game of The Resistance, a social deduction game for 5 - 10 players.
 
-[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
-
 ## Requirements
 * A [Slack](https://slack.com) account
 * A free [Heroku](https://www.heroku.com/) account
