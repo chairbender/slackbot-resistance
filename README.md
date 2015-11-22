@@ -24,8 +24,8 @@ See the next section for info on running it yourself outside of Heroku.
 1. Ensure that you have installed [Gradle](http://gradle.org/gradle-download/) and added it to your PATH.
 2. Clone this repository and run "gradle jar" in the root folder.
 3. In Slack, configure a bot integration and save the API Key and Bot Name.
-4. Run the jar with "java -jar build/libs/slackbot-resistance-1.0.jar (bot API key) (bot name) false (server port)"
-5. You should be able to visit http://localhost:(server port) and see a small information page telling you that the bot is running.
+4. Run the jar with "java -jar build/libs/slackbot-resistance-1.0.jar (bot API key) (bot name) false (some port)"
+5. You should be able to visit http://localhost:(some port) and see a small information page telling you that the bot is running.
 
 ## Usage
 * 'resistbot' (assuming you called it 'resistbot') in any channel the bot is in and it will tell you what you can do
