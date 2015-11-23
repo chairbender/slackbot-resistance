@@ -9,7 +9,7 @@ Requires:
 * Permission to set up integrations in Slack
 
 Please note that, if you are using the free Heroku account, the app will ocassionally go to sleep and the bot will
-stop responding to you. Visit the URL for your Heroku app to wake it up. There's no way to keep it awake 24/7 without paying.
+stop responding to you. Visit the URL for your Heroku app to wake it up. YOU WILL LOSE YOUR CURRENT GAME! There's no way to keep it awake 24/7 without paying.
 See the next section for info on running it yourself outside of Heroku.
 
 1. Set up a Slack bot. In Slack, select "Configure Integrations".
