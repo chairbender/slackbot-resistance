@@ -2,6 +2,21 @@
 A Slack bot for playing a game of The Resistance, a social deduction game for 5 - 10 players. Runs as a simple command line program
 that connects to your Slack instance. Includes files for running it on Heroku.
 
+## Running It
+Requires Java 7 JRE (or higher) on the machine you want to run it on
+
+1. Set up a Slack bot. In Slack, select "Configure Integrations".
+
+    ![](http://i.imgur.com/knODtaX.png)
+2. Select the "Configured Integrations Tab". Expand "Bots" and click "Add". Give it a name like "resistbot". Save that API Token for the next steps.
+3. Download the latest release JAR from the releases page.
+4. From the command line, run the JAR like so: 
+    java -jar (JAR name) (bot API key) (bot name)
+    * For (JAR name), use the path to the JAR you downloaded in step 3.
+    * Use the API Key you obtained from step 2 for (bot API key)
+    * For (bot name), use the name you gave to the bot when setting up the integration.
+5. Invite the bot to a channel and you should be able to use it. Say its name for more info.    
+
 ## Heroku Installation
 Requires:
 * A [Slack](https://slack.com) account
@@ -10,7 +25,7 @@ Requires:
 
 Please note that, if you are using the free Heroku account, the app will ocassionally go to sleep and the bot will
 stop responding to you. Visit the URL for your Heroku app to wake it up. YOU WILL LOSE YOUR CURRENT GAME! There's no way to keep it awake 24/7 without paying.
-See the next section for info on running it yourself outside of Heroku.
+It may be easier to just run it yourself as described in the "Running It" section.
 
 1. Set up a Slack bot. In Slack, select "Configure Integrations".
 
@@ -19,16 +34,8 @@ See the next section for info on running it yourself outside of Heroku.
 3. Click this button to set up a Heroku app to run the bot: [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy).
   * For the API_TOKEN variable, paste the API Token you copied from step 1 for the bot integration. For the BOT_USERNAME, use the name you gave to the bot in step 1.
 4. With the Heroku app running, invite the bot to any channels you want it to listen on.
+5. Remember, if using the free Heroku, visit the URL for your Heroku app to wake the bot up should it go to sleep.
 
-## Custom Installation
-Requires:
-* Installed [Gradle](http://gradle.org/gradle-download/) and added it to your PATH.
-* Have Java 8 JRE on the machine you want to run it on
-
-1. Clone this repository and run "gradle jar" in the root folder.
-2. In Slack, configure a bot integration and save the API Key and Bot Name.
-3. Run the jar with "java -jar build/libs/slackbot-resistance-1.0.jar (bot API key) (bot name) false (some port)"
-4. You should be able to visit http://localhost:(some port) and see a small information page telling you that the bot is running.
 
 ## Usage
 * 'resistbot' (assuming you called it 'resistbot') in any channel the bot is in and it will tell you what you can do

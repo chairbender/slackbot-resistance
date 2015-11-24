@@ -24,19 +24,17 @@ public class SlackBotResistance {
      * @param args
      * 0 - slack api token
      * 1 - name you want this bot to respond to (i.e. "resistbot" or whatever you chose when creating the bot)
-     * 2 - 'true' or 'false' - whether you want to set it to testing mode, where one player controls multiple characters
-     * 3 - port to run bind to for serving up the info HTML page
+     * 2 - 'true' or 'false' - whether you want to set it to testing mode, where one player controls multiple characters. False if omitted.
+     * 3 - port to run bind to for serving up the info HTML page. won't run a server if this is omitted
      */
     public static void main(String[] args) throws Exception {
         String apiToken = args[0];
         final String botName = args[1];
-        final boolean testingMode = args[2].equalsIgnoreCase("true");
-        String port = args[3];
-
-        //start up a server that serves up a small information page
-        Server server = new Server(Integer.parseInt(port));
-        server.setHandler(new InfoPageHandler());
-
+        boolean isTesting = false;
+        if (args.length >= 3) {
+            isTesting = args[2].equalsIgnoreCase("true");
+        }
+        final boolean testingMode = isTesting;
         SlackSession session = SlackSessionFactory.createWebSocketSlackSession(apiToken);
         //add a listener to pick up when to start a game
         session.addMessagePostedListener(new SlackMessagePostedListener() {
@@ -91,8 +89,15 @@ public class SlackBotResistance {
             }
         });
         session.connect();
-        server.start();
-        server.join();
+
+        //start up a server that serves up a small information page if a port is specified
+        if (args.length == 4) {
+            String port = args[3];
+            Server server = new Server(Integer.parseInt(port));
+            server.setHandler(new InfoPageHandler());
+            server.start();
+            server.join();
+        }
     }
 
 }
