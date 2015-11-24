@@ -2,7 +2,6 @@ package com.chairbender.slackbot.resistance.game.model;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Encapsulates an individual player of the game. The person playing, not their role in the game.

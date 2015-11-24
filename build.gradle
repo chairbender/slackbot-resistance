@@ -11,6 +11,9 @@ buildscript {
     }
 }
 
+targetCompatibility = 1.7
+sourceCompatibility = 1.7
+
 repositories {
     mavenCentral()
     maven { url "https://jitpack.io" }
@@ -34,7 +37,7 @@ stage.dependsOn(copyToLib)
 
 dependencies {
     compile 'com.github.Ullink:simple-slack-api:2ec3a0ac7e'
-    compile 'org.eclipse.jetty:jetty-server:9.3.6.v20151106'
+    compile 'org.eclipse.jetty:jetty-server:8.1.18.v20150929'
 }
 
 

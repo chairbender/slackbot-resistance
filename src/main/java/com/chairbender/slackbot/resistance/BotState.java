@@ -11,9 +11,7 @@ import com.ullink.slack.simpleslackapi.SlackUser;
 import com.ullink.slack.simpleslackapi.listeners.SlackMessagePostedListener;
 import com.ullink.slack.simpleslackapi.replies.SlackChannelReply;
 
-import java.io.IOException;
 import java.util.*;
-import java.util.stream.BaseStream;
 
 /**
  * Tracks the state of the bot in a thread safe way.
