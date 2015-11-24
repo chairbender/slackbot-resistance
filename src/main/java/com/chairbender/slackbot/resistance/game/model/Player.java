@@ -23,7 +23,11 @@ public class Player {
      * @return a set of players with the names set to the given usernames
      */
     public static Set<Player> createFromUserNames(Set<String> playerUsernames) {
-        return playerUsernames.stream().map(Player::new).collect(Collectors.toSet());
+        Set<Player> result = new HashSet<>();
+        for (String playerUsername : playerUsernames) {
+            result.add(new Player(playerUsername));
+        }
+        return result;
     }
 
     public String getUserName() {

@@ -25,7 +25,12 @@ public abstract class GameMessageUtil {
     public static String listOtherPeople(Set<PlayerCharacter> people, String exclude) {
         StringBuilder result = new StringBuilder("");
 
-        Set<String> otherNames = people.stream().filter(character -> !character.getUserName().equals(exclude)).map(PlayerCharacter::getUserName).collect(Collectors.toSet());
+        Set<String> otherNames = new HashSet<>();
+        for (PlayerCharacter person : people) {
+            if (!person.getUserName().equals(exclude)) {
+                otherNames.add(person.getUserName());
+            }
+        }
         if (otherNames.size() == 1) {
             return otherNames.iterator().next();
         } else if (otherNames.size() == 2) {

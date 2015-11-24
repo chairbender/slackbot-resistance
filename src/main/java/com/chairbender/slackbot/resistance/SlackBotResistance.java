@@ -29,8 +29,8 @@ public class SlackBotResistance {
      */
     public static void main(String[] args) throws Exception {
         String apiToken = args[0];
-        String botName = args[1];
-        boolean testingMode = args[2].equalsIgnoreCase("true");
+        final String botName = args[1];
+        final boolean testingMode = args[2].equalsIgnoreCase("true");
         String port = args[3];
 
         //start up a server that serves up a small information page
@@ -41,7 +41,7 @@ public class SlackBotResistance {
         //add a listener to pick up when to start a game
         session.addMessagePostedListener(new SlackMessagePostedListener() {
             @Override
-            public void onEvent(SlackMessagePosted event, SlackSession session) {
+            public void onEvent(final SlackMessagePosted event, SlackSession session) {
                 //start the game when instructed
                 if (event.getMessageContent().startsWith(botName)) {
                     //check for the help command
