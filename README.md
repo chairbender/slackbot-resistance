@@ -9,7 +9,7 @@ Requires Java 7 JRE (or higher) on the machine you want to run it on
 
     ![](http://i.imgur.com/knODtaX.png)
 2. Select the "Configured Integrations Tab". Expand "Bots" and click "Add". Give it a name like "resistbot". Save that API Token for the next steps.
-3. Download the latest release JAR from the releases page.
+3. Download the [latest release JAR](https://github.com/chairbender/slackbot-resistance/releases/download/1.0/slackbot-resistance-1.0-standalone.jar) from the releases page.
 4. From the command line, run the JAR like so: 
     java -jar (JAR name) (bot API key) (bot name)
     * For (JAR name), use the path to the JAR you downloaded in step 3.
