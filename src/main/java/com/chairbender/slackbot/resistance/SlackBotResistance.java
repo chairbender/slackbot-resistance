@@ -77,8 +77,17 @@ public class SlackBotResistance {
                             channelIDsToResistanceBots.put(event.getChannel().getId(), resistanceBot);
                         }
                     } else {
-                        session.sendMessage(event.getChannel(), "Say '" + botName + " start' to start a game of The Resistance.\n" +
-                                "Say 'resistbot help' for a list of commands.", null);
+                        //let the bot handle it if a game is in progress, otherwise explain how to start
+                        if (channelIDsToResistanceBots.containsKey(event.getChannel().getId()) &&
+                                channelIDsToResistanceBots.get(event.getChannel().getId()).isGameRunning()) {
+                            //allow all running bots to handle the message
+                            for (ResistanceBot bot : channelIDsToResistanceBots.values()) {
+                                bot.onMessagePosted(event);
+                            }
+                        } else {
+                            session.sendMessage(event.getChannel(), "Say '" + botName + " start' to start a game of The Resistance.\n" +
+                                    "Say 'resistbot help' for a list of commands.", null);
+                        }
                     }
                 } else {
                     //allow all running bots to handle the message

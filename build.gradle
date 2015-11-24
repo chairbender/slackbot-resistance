@@ -1,9 +1,23 @@
 apply plugin: 'java'
+apply plugin: 'gradle-one-jar'
 version = '1.0'
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.github.rholder:gradle-one-jar:1.0.4'
+    }
+}
 
 repositories {
     mavenCentral()
     maven { url "https://jitpack.io" }
+}
+
+task createRelease(type: OneJar) {
+    mainClass = 'com.chairbender.slackbot.resistance.SlackBotResistance'
 }
 
 task copyToLib(type: Copy) {
