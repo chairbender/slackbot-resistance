@@ -82,7 +82,7 @@ public class ResistanceBot {
             //only listen to the leader right now
             if (resistanceMessage.getSender().equals(botState.getLeaderUserName())) {
                 if (resistanceMessage.getMessage().startsWith("pick")) {
-                    String chosenUsername = resistanceMessage.getMessage().replace("pick", "").trim();
+                    String chosenUsername = resistanceMessage.getMessage().replace("pick", "").trim().replace("@","");
                     //confirm it is a player in the game
                     if (!botState.isPlayer(chosenUsername)) {
                         botState.sendPublicMessageToPlayer(resistanceMessage.getSender(),
@@ -104,7 +104,7 @@ public class ResistanceBot {
                     reportTeamSelection();
 
                 } else if (resistanceMessage.getMessage().startsWith("drop")) {
-                    String chosenUsername = resistanceMessage.getMessage().replace("drop", "").trim();
+                    String chosenUsername = resistanceMessage.getMessage().replace("drop", "").trim().replace("@","");
                     if (chosenUsername.isEmpty()) {
                         botState.sendPublicMessage("Dropping all members of the current team.");
                         botState.removeAllTeamMembers();
