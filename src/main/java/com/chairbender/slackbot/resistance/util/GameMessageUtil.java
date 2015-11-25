@@ -133,4 +133,14 @@ public abstract class GameMessageUtil {
 
         return result.toString();
     }
+
+    /**
+     *
+     * @param atMessage string containing an @ message like &lt;@U1232&gt;
+     * @return the same string but with the stuff around the UID in the @ message removed, like just U1232
+     */
+    public static String atMessageToUID(String atMessage) {
+        return atMessage.replace("<@","").replace(">","");
+
+    }
 }

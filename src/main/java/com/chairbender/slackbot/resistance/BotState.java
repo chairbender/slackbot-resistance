@@ -4,10 +4,7 @@ import com.chairbender.slackbot.resistance.game.model.Player;
 import com.chairbender.slackbot.resistance.game.model.PlayerCharacter;
 import com.chairbender.slackbot.resistance.game.state.*;
 import com.chairbender.slackbot.resistance.util.GameMessageUtil;
-import com.ullink.slack.simpleslackapi.SlackChannel;
-import com.ullink.slack.simpleslackapi.SlackMessageHandle;
-import com.ullink.slack.simpleslackapi.SlackSession;
-import com.ullink.slack.simpleslackapi.SlackUser;
+import com.ullink.slack.simpleslackapi.*;
 import com.ullink.slack.simpleslackapi.listeners.SlackMessagePostedListener;
 import com.ullink.slack.simpleslackapi.replies.SlackChannelReply;
 
@@ -125,6 +122,19 @@ public class BotState {
      */
     public SlackChannel getPublicChannel() {
         return gameChannel;
+    }
+
+    /**
+     *
+     * @return the bots user ID. null if not found
+     */
+    public String getBotUID() {
+        SlackUser botUser = session.findUserByUserName(botName);
+        if (botUser != null) {
+            return botUser.getId();
+        } else {
+            return null;
+        }
     }
 
     public enum State {
@@ -373,7 +383,7 @@ public class BotState {
     public Player getPlayerFromNameOrAtMention(String chosenUserNameOrAtMention) {
         for (Player player : players) {
             if (player.getUserName().equals(chosenUserNameOrAtMention) ||
-                    player.getUserID().equalsIgnoreCase(chosenUserNameOrAtMention.replace("<@","").replace(">",""))) {
+                    player.getUserID().equalsIgnoreCase(GameMessageUtil.atMessageToUID(chosenUserNameOrAtMention))) {
                 return player;
             }
         }

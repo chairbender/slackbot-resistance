@@ -50,11 +50,12 @@ public class ResistanceBot {
                 (!postedEvent.getChannel().isDirect() && !postedEvent.getChannel().getId().equals(botState.getPublicChannel().getId()))) {
             return;
         }
-        //Report the current state and the last prompt if the message starts with the bot name and a game
+        //Report the current state and the last prompt if the message starts with the bot name or is an @ message to the bot and a game
         //is in progress
-        if (message.startsWith(botState.getBotName()) &&
-                !botState.getState().equals(BotState.State.WAITING_TO_START) &&
-                !botState.getState().equals(BotState.State.REGISTRATION)) {
+        if ((message.startsWith(botState.getBotName()) ||
+                (botState.getBotUID() != null && GameMessageUtil.atMessageToUID(message).startsWith(botState.getBotUID()))) &&
+                (!botState.getState().equals(BotState.State.WAITING_TO_START) &&
+                !botState.getState().equals(BotState.State.REGISTRATION))) {
             botState.remind();
         }
         if (botState.getState().equals(BotState.State.REGISTRATION)) {

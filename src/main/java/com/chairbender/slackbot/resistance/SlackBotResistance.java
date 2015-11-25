@@ -1,7 +1,9 @@
 package com.chairbender.slackbot.resistance;
 
 import com.chairbender.slackbot.resistance.server.handler.InfoPageHandler;
+import com.chairbender.slackbot.resistance.util.GameMessageUtil;
 import com.ullink.slack.simpleslackapi.SlackSession;
+import com.ullink.slack.simpleslackapi.SlackUser;
 import com.ullink.slack.simpleslackapi.events.SlackMessagePosted;
 import com.ullink.slack.simpleslackapi.impl.SlackSessionFactory;
 import com.ullink.slack.simpleslackapi.listeners.SlackMessagePostedListener;
@@ -40,8 +42,10 @@ public class SlackBotResistance {
         session.addMessagePostedListener(new SlackMessagePostedListener() {
             @Override
             public void onEvent(final SlackMessagePosted event, SlackSession session) {
+                SlackUser botUser = session.findUserByUserName(botName);
                 //start the game when instructed
-                if (event.getMessageContent().startsWith(botName)) {
+                if (event.getMessageContent().startsWith(botName) ||
+                        (botUser != null && GameMessageUtil.atMessageToUID(event.getMessageContent()).startsWith(botUser.getId()))) {
                     //check for the help command
                     if (event.getMessageContent().contains("help")) {
                         session.sendMessage(event.getChannel(),
