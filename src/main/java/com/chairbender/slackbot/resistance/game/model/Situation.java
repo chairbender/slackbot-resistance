@@ -75,12 +75,12 @@ public class Situation {
 
     /**
      *
-     * @param username username to find
-     * @return the player character with the given username. null if not found
+     * @param toGet player to find
+     * @return the player character played by the given player
      */
-    public PlayerCharacter getPlayerByUserName(String username) {
+    public PlayerCharacter getPlayerCharacter(Player toGet) {
         for (PlayerCharacter playerCharacter : playerCharacters) {
-            if (playerCharacter.getUserName().equals(username)) {
+            if (playerCharacter.getPlayer().equals(toGet)) {
                 return playerCharacter;
             }
         }

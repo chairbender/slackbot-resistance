@@ -1,5 +1,6 @@
 package com.chairbender.slackbot.resistance.model;
 
+import com.chairbender.slackbot.resistance.game.model.Player;
 import com.ullink.slack.simpleslackapi.SlackChannel;
 import com.ullink.slack.simpleslackapi.events.SlackMessagePosted;
 
@@ -53,13 +54,13 @@ public class ResistanceMessage {
 
     /**
      *
-     * @return the username of the sender. If testing mode, returns the first word of the message.
+     * @return the sender player. If testing mode, treats the first word of the message as the sender username
      */
-    public String getSender() {
+    public Player getSender() {
         if (isTesting) {
-            return event.getMessageContent().split(" ")[0];
+            return Player.fromTestUserName(event.getMessageContent().split(" ")[0]);
         } else {
-            return event.getSender().getUserName();
+            return Player.fromSlackUser(event.getSender());
         }
     }
 }

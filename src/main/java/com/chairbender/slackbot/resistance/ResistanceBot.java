@@ -1,5 +1,6 @@
 package com.chairbender.slackbot.resistance;
 
+import com.chairbender.slackbot.resistance.game.model.Player;
 import com.chairbender.slackbot.resistance.game.model.PlayerCharacter;
 import com.chairbender.slackbot.resistance.model.ResistanceMessage;
 import com.chairbender.slackbot.resistance.util.GameMessageUtil;
@@ -58,70 +59,72 @@ public class ResistanceBot {
         }
         if (botState.getState().equals(BotState.State.REGISTRATION)) {
             if (message.contains("join")) {
-                if (botState.getPlayerUserNames().size() == 10) {
+                if (botState.getPlayers().size() == 10) {
                     botState.sendPublicMessageToPlayer(resistanceMessage.getSender(), "Sorry, the player" +
                             " limit of 10 has already been reached.");
                 } else if (!botState.registerPlayer(resistanceMessage.getSender())) {
                     botState.sendPublicMessageToPlayer(resistanceMessage.getSender(), "You have already joined.");
                 } else {
-                    botState.sendPublicMessage(resistanceMessage.getSender() + " is playing. " +
-                            botState.getPlayerUserNames().size() + " players in the game.");
+                    botState.sendPublicMessage(resistanceMessage.getSender().getUserName() + " is playing. " +
+                            botState.getPlayers().size() + " players in the game.");
                 }
             } else if (message.contains("done")) {
                 //check if there's enough players
-                if (botState.getPlayerUserNames().size() >= 5) {
+                if (botState.getPlayers().size() >= 5) {
                     //start the game, send out all the player roles
                     startGame();
                 } else {
                     botState.sendPublicMessage("Sorry, you need at least 5 players. Currently only " +
-                            botState.getPlayerUserNames().size() + " people are playing.");
+                            botState.getPlayers().size() + " people are playing.");
                 }
 
             }
         } else if (botState.getState().equals(BotState.State.PICK_TEAM)) {
             //only listen to the leader right now
-            if (resistanceMessage.getSender().equals(botState.getLeaderUserName())) {
+            if (resistanceMessage.getSender().getUserName().equals(botState.getLeaderUserName())) {
                 if (resistanceMessage.getMessage().startsWith("pick")) {
-                    String chosenUsername = resistanceMessage.getMessage().replace("pick", "").trim().replace("@","");
+                    String chosenUserName = resistanceMessage.getMessage().replace("pick", "").trim();
+                    Player chosenPlayer = botState.getPlayerFromNameOrAtMention(chosenUserName);
                     //confirm it is a player in the game
-                    if (!botState.isPlayer(chosenUsername)) {
+                    if (!botState.isPlayer(chosenPlayer)) {
                         botState.sendPublicMessageToPlayer(resistanceMessage.getSender(),
-                                "I don't recognize the player called " + chosenUsername + ".");
-                    } else if (botState.isPlayerOnTeam(chosenUsername)) {
+                                "I don't recognize the player called " + chosenPlayer.getUserName() + ".");
+                    } else if (botState.isPlayerOnTeam(chosenPlayer)) {
                         //confirm the player isn't already chosen
                         botState.sendPublicMessageToPlayer(resistanceMessage.getSender(),
-                                "That player, " + chosenUsername + ", is already on the team.");
+                                "That player, " + chosenPlayer.getUserName() + ", is already on the team.");
                     } else if (botState.isTeamFull()) {
                         //confirm there aren't too many team members
                         botState.sendPublicMessageToPlayer(resistanceMessage.getSender(),
                                 "The team is already full. Please 'drop' somebody first.");
                     } else {
                         //add the player and report the current team
-                        botState.addTeamMember(chosenUsername);
-                        botState.sendPublicMessage("Added " + chosenUsername + " to the team.\n");
+                        botState.addTeamMember(chosenPlayer);
+                        botState.sendPublicMessage("Added " + chosenPlayer.getUserName() + " to the team.\n");
                     }
 
                     reportTeamSelection();
 
                 } else if (resistanceMessage.getMessage().startsWith("drop")) {
                     String chosenUsername = resistanceMessage.getMessage().replace("drop", "").trim().replace("@","");
+                    Player chosenPlayer = botState.getPlayerFromNameOrAtMention(chosenUsername);
                     if (chosenUsername.isEmpty()) {
                         botState.sendPublicMessage("Dropping all members of the current team.");
                         botState.removeAllTeamMembers();
                     } else {
-                        if (!botState.isPlayer(chosenUsername)) {
+                        if (!botState.isPlayer(chosenPlayer)) {
                             //confirm it is a player in the game
                             botState.sendPublicMessageToPlayer(resistanceMessage.getSender(),
-                                    "I don't recognize the player called " + chosenUsername + ".");
-                        } else if (!botState.isPlayerOnTeam(chosenUsername)) {
+                                    "I don't recognize the player called " + chosenPlayer.getUserName() + ".");
+                        } else if (!botState.isPlayerOnTeam(chosenPlayer)) {
                             //confirm the player is on the team
                             botState.sendPublicMessageToPlayer(resistanceMessage.getSender(),
-                                    "That player, " + chosenUsername + ", is not on the team.");
+                                    "That player, " + chosenPlayer.getUserName() + ", is not on the team.");
 
                         } else {
                             //drop the player and report the current team./
-                            botState.removeTeamMember(chosenUsername);
-                            botState.sendPublicMessage("Dropped " + chosenUsername + " from the team.");
+                            botState.removeTeamMember(chosenPlayer);
+                            botState.sendPublicMessage("Dropped " + chosenPlayer.getUserName() + " from the team.");
                         }
                     }
                     reportTeamSelection();
@@ -140,20 +143,20 @@ public class ResistanceBot {
         } else if (botState.getState().equals(BotState.State.VOTE_TEAM)) {
             //check if this is a direct message
             if (resistanceMessage.getChannel().isDirect()) {
-                String senderUserName = resistanceMessage.getSender();
+                Player sender = resistanceMessage.getSender();
                 String vote = resistanceMessage.getMessage().trim();
                 //check if they haven't already voted
-                if (botState.hasPlayerVoted(senderUserName)) {
-                    botState.sendPrivateMessageToPlayer(senderUserName,
+                if (botState.hasPlayerVoted(sender)) {
+                    botState.sendPrivateMessageToPlayer(sender,
                             "You have already voted.");
                 } else if (!vote.equalsIgnoreCase("no") && !vote.equalsIgnoreCase("yes")) {
-                    botState.sendPrivateMessageToPlayer(senderUserName,
+                    botState.sendPrivateMessageToPlayer(sender,
                             "Please vote only 'yes' or 'no'.");
                 } else {
                     //register the vote
-                    botState.placeVote(senderUserName, vote.equalsIgnoreCase("yes"));
-                    botState.sendPrivateMessageToPlayer(senderUserName, "Thank you. Your vote has been accepted.");
-                    botState.sendPublicMessage(senderUserName + " has voted");
+                    botState.placeVote(sender, vote.equalsIgnoreCase("yes"));
+                    botState.sendPrivateMessageToPlayer(sender, "Thank you. Your vote has been accepted.");
+                    botState.sendPublicMessage(sender.getUserName() + " has voted");
                     if (botState.allVotesSubmitted()) {
                         //done, lock in the votes
                         voteTeam();
@@ -164,32 +167,32 @@ public class ResistanceBot {
         } else if (botState.getState().equals(BotState.State.DO_MISSION)) {
             //check if this is a direct message
             if (resistanceMessage.getChannel().isDirect()) {
-                String senderUserName = resistanceMessage.getSender();
+                Player sender = resistanceMessage.getSender();
                 String choice = resistanceMessage.getMessage().trim();
                 //check if they are on the team
-                if (!botState.isPlayerOnTeam(senderUserName)) {
-                    botState.sendPrivateMessageToPlayer(senderUserName, "Nice try, but you're not on" +
+                if (!botState.isPlayerOnTeam(sender)) {
+                    botState.sendPrivateMessageToPlayer(sender, "Nice try, but you're not on" +
                             " the current team.");
-                } else if (botState.hasTeamMemberChosen(senderUserName)) {
+                } else if (botState.hasTeamMemberChosen(sender)) {
                     //check that they haven't chosen
-                    botState.sendPrivateMessageToPlayer(senderUserName,
+                    botState.sendPrivateMessageToPlayer(sender,
                             "You have already chosen. Wait for the other team members to choose.");
                 } else if (!choice.equalsIgnoreCase("pass") && !choice.equalsIgnoreCase("fail")) {
                     //check that they submitted a valid vote
-                    botState.sendPrivateMessageToPlayer(senderUserName,
+                    botState.sendPrivateMessageToPlayer(sender,
                             "Please vote only 'pass' or 'fail'.");
                 } else {
                     //register the vote, ensure that a resistance player can't vote "fail"
                     boolean pass = choice.equalsIgnoreCase("pass");
-                    if (!botState.isSpy(senderUserName) && !pass) {
-                        botState.sendPrivateMessageToPlayer(senderUserName, "You can't make the mission fail " +
+                    if (!botState.isSpy(sender) && !pass) {
+                        botState.sendPrivateMessageToPlayer(sender, "You can't make the mission fail " +
                                 "when you are a resistance member! I've taken the liberty of marking your vote" +
                                 " as 'pass'. You're welcome!");
                         pass = true;
                     }
-                    botState.placeMissionChoice(senderUserName, pass);
-                    botState.sendPrivateMessageToPlayer(senderUserName, "Thank you. Your choice has been accepted.");
-                    botState.sendPublicMessage(senderUserName + " has chosen.");
+                    botState.placeMissionChoice(sender, pass);
+                    botState.sendPrivateMessageToPlayer(sender, "Thank you. Your choice has been accepted.");
+                    botState.sendPublicMessage(sender.getUserName() + " has chosen.");
                     if (botState.allMissionChoicesSubmitted()) {
                         //done, lock in the votes
                         try {
@@ -203,6 +206,7 @@ public class ResistanceBot {
             }
         }
     }
+
 
     /**
      * completes the current mission. Checks for a victory for the spies or resistance. Changes the leader
@@ -239,8 +243,8 @@ public class ResistanceBot {
                     "Only spies can choose 'fail'. \n" +
                     "If one person chooses 'fail', the mission will fail.\n" +
                     "Your choice will not be revealed.");
-            for (String username : botState.getTeam()) {
-                botState.sendPrivateMessageToPlayer(username, "Will you allow the mission to succeed or make it fail? Say 'pass' or 'fail'.");
+            for (Player player : botState.getTeam()) {
+                botState.sendPrivateMessageToPlayer(player, "Will you allow the mission to succeed or make it fail? Say 'pass' or 'fail'.");
             }
         } else {
             botState.reportVotes();
@@ -273,17 +277,17 @@ public class ResistanceBot {
     private void startGame() {
         botState.startGame();
 
-        botState.sendPrompt("The game has begun. The players are " + GameMessageUtil.listPeople(botState.getPlayerUserNames()));
+        botState.sendPrompt("The game has begun. The players are " + GameMessageUtil.listPeople(botState.getPlayers()));
 
         Set<PlayerCharacter> spies = botState.getSpies();
         for (PlayerCharacter gameCharacter : botState.getPlayerCharacters()) {
             //tell the roles
             if (gameCharacter.isResistance()) {
-                botState.sendPrivateMessageToPlayer(gameCharacter.getUserName(), "You are a member of the resistance. If " +
+                botState.sendPrivateMessageToPlayer(gameCharacter.getPlayer(), "You are a member of the resistance. If " +
                         " three missions succeed, you win! You're" +
                         " on the side of good. Hooray for you!");
             } else {
-                botState.sendPrivateMessageToPlayer(gameCharacter.getUserName(), "You are a spy along with " +
+                botState.sendPrivateMessageToPlayer(gameCharacter.getPlayer(), "You are a spy along with " +
                         GameMessageUtil.listOtherPeople(spies, gameCharacter.getUserName()) + ".\n" +
                         "If three missions fail, you win!");
             }
@@ -294,7 +298,7 @@ public class ResistanceBot {
     }
 
     private void announceLeader() {
-        botState.sendPrompt("Attention " + botState.getLeaderUserName() + "! You are the current leader. \n" +
+        botState.sendPrompt("Attention @" + botState.getLeaderUserName() + "! You are the current leader. \n" +
                 "Pick " + botState.getRequiredTeamSize() + " people to be on the team for the next mission.\n" +
                 "Use 'pick <username>' to add someone to the team. \nUse 'drop <username>' to remove them, " +
                 "or just say 'drop' to remove everyone. \nSay 'done' to lock in your choices and let everyone vote on your choice." +
@@ -314,8 +318,8 @@ public class ResistanceBot {
                 "If it ties or a majority votes no, the team leader will be advanced to the next player in the rotation.\n" +
                 "I will announce all votes once they are all submitted.");
         botState.sendPublicMessage("The leader rotation is " + GameMessageUtil.listOrder(botState.getPlayerCharacters()));
-        for (String username : botState.getPlayerUserNames()) {
-            botState.sendPrivateMessageToPlayer(username, "Do you accept this team? Say 'yes' or 'no'.");
+        for (Player player : botState.getPlayers()) {
+            botState.sendPrivateMessageToPlayer(player, "Do you accept this team? Say 'yes' or 'no'.");
         }
     }
 

@@ -28,10 +28,10 @@ public class BotState {
     //tracks the last message
     private String lastMessage;
     //tracks the players in the game
-    private Set<String> playerUsernames;
+    private Set<Player> players;
     //tracks the channel the game was started in
     private SlackChannel gameChannel;
-    private Set<String> team;
+    private Set<Player> team;
 
     //All the various game states. Looks messy, but it works. Each state is its own, self-contained
     //game situation. They can have arbitrary action methods. We could create a single Object and then cast
@@ -39,34 +39,34 @@ public class BotState {
     //though it clutters up our field definitions
     private PickTeamState pickTeamState;
     //tracks the currently selected memebers of the team
-    private Set<String> teamSelection;
+    private Set<Player> teamSelection;
 
     private VoteTeamState voteTeamState;
     //tracks the current votes of each player
-    private Map<String,Boolean> playerVotes;
+    private Map<Player,Boolean> playerVotes;
     //tracks the number of successive rejections without a team being accepted
     private int successiveRejections = 0;
 
     private DoMissionState doMissionState;
     //holds the choices of the team members on a given mission (pass or fail)
-    private Map<String,Boolean> teamMemberChoices;
+    private Map<Player,Boolean> teamMemberChoices;
 
     /**
      *
-     * @param teamMemberUserName user who is choosing whether to pass / fail
+     * @param teamMember user who is choosing whether to pass / fail
      * @param pass whether they vote to pass or fail the mission
      */
-    public synchronized void placeMissionChoice(String teamMemberUserName, boolean pass) {
-        teamMemberChoices.put(teamMemberUserName,pass);
+    public synchronized void placeMissionChoice(Player teamMember, boolean pass) {
+        teamMemberChoices.put(teamMember,pass);
     }
 
     /**
-     * @param userName username to check
+     * @param player player to check
      * @return true if the player with that username is a spy
      */
-    public synchronized boolean isSpy(String userName) {
+    public synchronized boolean isSpy(Player player) {
         for (PlayerCharacter playerCharacter : getSpies()) {
-            if (playerCharacter.getUserName().equals(userName)) {
+            if (playerCharacter.getPlayer().equals(player)) {
                 return true;
             }
         }
@@ -140,9 +140,9 @@ public class BotState {
      */
     public synchronized void reportVotes() {
         StringBuilder voteReport = new StringBuilder("");
-        for (String playerUsername : playerVotes.keySet()) {
-            voteReport.append(playerUsername).append(": ").append(
-                    playerVotes.get(playerUsername) ? "yes\n" : "no\n");
+        for (Player player : playerVotes.keySet()) {
+            voteReport.append(player.getUserName()).append(": ").append(
+                    playerVotes.get(player) ? "yes\n" : "no\n");
         }
         sendPublicMessage("The votes were:\n" + voteReport.toString());
     }
@@ -164,11 +164,11 @@ public class BotState {
 
     /**
      *
-     * @param senderUserName username of player to check
+     * @param player player to check
      * @return true if that player has already chosen pass or fail
      */
-    public synchronized boolean hasTeamMemberChosen(String senderUserName) {
-        return teamMemberChoices.containsKey(senderUserName);
+    public synchronized boolean hasTeamMemberChosen(Player player) {
+        return teamMemberChoices.containsKey(player);
     }
 
 
@@ -207,27 +207,27 @@ public class BotState {
 
     /**
      *
-     * @param playerUserName username to check
+     * @param player player to check
      * @return true if the player has already voted for the current vote.
      */
-    public synchronized boolean hasPlayerVoted(String playerUserName) {
-        return playerVotes.keySet().contains(playerUserName);
+    public synchronized boolean hasPlayerVoted(Player player) {
+        return playerVotes.keySet().contains(player);
     }
 
     /**
      *
-     * @return the usernames of the players in the game. Do not modify the returned set or you'll be sorry.
+     * @return the players of the players in the game. Do not modify the returned set or you'll be sorry.
      */
-    public synchronized Set<String> getPlayerUserNames() {
-        return Collections.unmodifiableSet(playerUsernames);
+    public synchronized Set<Player> getPlayers() {
+        return Collections.unmodifiableSet(players);
     }
 
     /**
-     * starts the game using the usernames in playerUsernames.
+     * starts the game using the usernames in players.
      */
     public synchronized void startGame() {
         PreGameState preGameState = new PreGameState();
-        pickTeamState = preGameState.startGame(Player.createFromUserNames(playerUsernames));
+        pickTeamState = preGameState.startGame(players);
         state = State.PICK_TEAM;
         teamSelection = new HashSet<>();
     }
@@ -332,9 +332,9 @@ public class BotState {
 
     /**
      *
-     * @return the current usernames of players on the team. Don't modify the returned set.
+     * @return the current players on the team. Don't modify the returned set.
      */
-    public synchronized Set<String> getTeam() {
+    public synchronized Set<Player> getTeam() {
         return Collections.unmodifiableSet(teamSelection);
     }
 
@@ -356,21 +356,37 @@ public class BotState {
 
     /**
      *
-     * @param username username to check
+     * @param player player to check
      * @return true if the username is a user in the game. otherwise false.
      */
-    public synchronized boolean isPlayer(String username) {
-        return playerUsernames.contains(username);
+    public synchronized boolean isPlayer(Player player) {
+        return players.contains(player);
     }
 
 
     /**
      *
-     * @param username username to check
+     * @param chosenUserNameOrAtMention a username or a special "at mention string" which looks something like
+     *                                 &lt;u12342&gt;
+     * @return the player corresponding to that username or at mention. null if not found
+     */
+    public Player getPlayerFromNameOrAtMention(String chosenUserNameOrAtMention) {
+        for (Player player : players) {
+            if (player.getUserName().equals(chosenUserNameOrAtMention) ||
+                    player.getUserID().equalsIgnoreCase(chosenUserNameOrAtMention.replace("<@","").replace(">",""))) {
+                return player;
+            }
+        }
+        return null;
+    }
+
+    /**
+     *
+     * @param player player to check
      * @return true if the player is on the current mission team
      */
-    public synchronized boolean isPlayerOnTeam(String username) {
-        return teamSelection.contains(username);
+    public synchronized boolean isPlayerOnTeam(Player player) {
+        return teamSelection.contains(player);
     }
 
     /**
@@ -383,28 +399,28 @@ public class BotState {
 
     /**
      *
-     * @param chosenUsername username to add to the mission team
+     * @param chosenPlayer username to add to the mission team
      */
-    public synchronized void addTeamMember(String chosenUsername) {
-        teamSelection.add(chosenUsername);
+    public synchronized void addTeamMember(Player chosenPlayer) {
+        teamSelection.add(chosenPlayer);
     }
 
     /**
      *
-     * @param chosenUsername team member username to remove from the mission team
+     * @param chosenPlayer team member username to remove from the mission team
      */
-    public synchronized void removeTeamMember(String chosenUsername) {
-        teamSelection.remove(chosenUsername);
+    public synchronized void removeTeamMember(Player chosenPlayer) {
+        teamSelection.remove(chosenPlayer);
     }
 
 
     /**
      *
-     * @param userName username to vote
+     * @param player player to vote
      * @param vote whether to accept the team or reject it
      */
-    public synchronized void placeVote(String userName, boolean vote) {
-        playerVotes.put(userName, vote);
+    public synchronized void placeVote(Player player, boolean vote) {
+        playerVotes.put(player, vote);
     }
 
     /**
@@ -412,7 +428,7 @@ public class BotState {
      * @return true if all votes have been submitted for all players for the current turn
      */
     public synchronized boolean allVotesSubmitted() {
-        return playerVotes.size() == playerUsernames.size();
+        return playerVotes.size() == players.size();
     }
 
     /**
@@ -427,15 +443,15 @@ public class BotState {
     /**
      * Sends a direct message to the user.
      *
-     * @param userName user to send the direct message to
+     * @param player user to send the direct message to
      * @param message to send
      */
-    public synchronized void sendPrivateMessageToPlayer(String userName, String message) {
+    public synchronized void sendPrivateMessageToPlayer(Player player, String message) {
         SlackUser user;
         if (isTestingMode) {
             user = session.findUserByUserName(testingModeUserName);
         } else {
-            user = session.findUserByUserName(userName);
+            user = session.findUserByUserName(player.getUserName());
         }
         SlackMessageHandle<SlackChannelReply> openDirectHandle = session.openDirectMessageChannel(user);
         SlackChannel directChannel = openDirectHandle.getReply().getSlackChannel();
@@ -449,8 +465,8 @@ public class BotState {
      * @param recipient the person to @ reply
      * @param message the message to send them
      */
-    public synchronized void sendPublicMessageToPlayer(String recipient, String message) {
-        session.sendMessage(gameChannel, "@" + recipient + " " + message,null);
+    public synchronized void sendPublicMessageToPlayer(Player recipient, String message) {
+        session.sendMessage(gameChannel, "@" + recipient.getUserName() + " " + message,null);
     }
 
 
@@ -468,14 +484,14 @@ public class BotState {
 
     /**
      *
-     * @param username slack username to register in the game (if testing mode, this can be a made up username)
+     * @param player slack user to register in the game (if testing mode, this can be a made up username)
      * @return true if the user isn't already registered using this method. false otherwise
      */
-    public synchronized boolean registerPlayer(String username) {
-        if (playerUsernames.contains(username)) {
+    public synchronized boolean registerPlayer(Player player) {
+        if (players.contains(player)) {
             return false;
         } else {
-            playerUsernames.add(username);
+            players.add(player);
             return true;
         }
     }
@@ -485,7 +501,7 @@ public class BotState {
      */
     public synchronized void startRegistration() {
         state = State.REGISTRATION;
-        playerUsernames = new HashSet<>();
+        players = new HashSet<>();
     }
 
     /**

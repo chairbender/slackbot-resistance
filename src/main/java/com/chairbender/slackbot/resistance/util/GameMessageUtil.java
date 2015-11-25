@@ -1,5 +1,6 @@
 package com.chairbender.slackbot.resistance.util;
 
+import com.chairbender.slackbot.resistance.game.model.Player;
 import com.chairbender.slackbot.resistance.game.model.PlayerCharacter;
 
 import java.util.HashSet;
@@ -51,26 +52,26 @@ public abstract class GameMessageUtil {
 
     /**
      *
-     * @param playerUsernames usernames to list with a comma and and
+     * @param players usernames to list with a comma and and
      * @return string listing of the usernames in a grammatically correct format that can be inserted into
      *      a sentence.
      */
-    public static String listPeople(Set<String> playerUsernames) {
+    public static String listPeople(Set<Player> players) {
         StringBuilder result = new StringBuilder("");
 
-        if (playerUsernames.size() == 1) {
-            return playerUsernames.iterator().next();
-        } else if (playerUsernames.size() == 2) {
-            Iterator<String> playersIterator = playerUsernames.iterator();
-            return playersIterator.next() + " and " + playersIterator.next();
+        if (players.size() == 1) {
+            return players.iterator().next().getUserName();
+        } else if (players.size() == 2) {
+            Iterator<Player> playersIterator = players.iterator();
+            return playersIterator.next().getUserName() + " and " + playersIterator.next().getUserName();
         }
 
         int i = 0;
-        for (String name : playerUsernames) {
-            if (i == playerUsernames.size() - 1) {
-                result.append(" and " + name);
+        for (Player player : players) {
+            if (i == players.size() - 1) {
+                result.append(" and " + player.getUserName());
             } else {
-                result.append(name + ", ");
+                result.append(player.getUserName() + ", ");
                 i++;
             }
         }

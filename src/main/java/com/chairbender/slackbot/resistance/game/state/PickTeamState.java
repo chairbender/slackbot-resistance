@@ -1,5 +1,6 @@
 package com.chairbender.slackbot.resistance.game.state;
 
+import com.chairbender.slackbot.resistance.game.model.Player;
 import com.chairbender.slackbot.resistance.game.model.PlayerCharacter;
 import com.chairbender.slackbot.resistance.game.model.Situation;
 
@@ -23,15 +24,15 @@ public class PickTeamState {
 
     /**
      *
-     * @param teamUsernames list of usernames of players on the team
+     * @param team list of usernames of players on the team
      * @return a state where the players need to vote on the team selection
      */
-    public VoteTeamState pickTeam(Set<String> teamUsernames) {
+    public VoteTeamState pickTeam(Set<Player> team) {
         //find the player characters for each username and assign them to the team, then create
         //the next state
         Set<PlayerCharacter> teamPlayers = new HashSet<>();
-        for (String username : teamUsernames) {
-            teamPlayers.add(situation.getPlayerByUserName(username));
+        for (Player player : team) {
+            teamPlayers.add(situation.getPlayerCharacter(player));
         }
         situation.setCurrentTeam(teamPlayers);
 

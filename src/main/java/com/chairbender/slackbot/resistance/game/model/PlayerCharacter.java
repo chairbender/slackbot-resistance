@@ -13,6 +13,10 @@ public class PlayerCharacter {
         return !isResistance();
     }
 
+    public Player getPlayer() {
+        return player;
+    }
+
     public enum Role {
         RESISTANCE,
         SPY
