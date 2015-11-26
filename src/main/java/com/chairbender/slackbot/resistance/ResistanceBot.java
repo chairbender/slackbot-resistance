@@ -87,9 +87,9 @@ public class ResistanceBot {
                     String chosenUserName = resistanceMessage.getMessage().replace("pick", "").trim();
                     Player chosenPlayer = botState.getPlayerFromNameOrAtMention(chosenUserName,resistanceMessage.getSender());
                     //confirm it is a player in the game
-                    if (!botState.isPlayer(chosenPlayer)) {
+                    if (chosenPlayer == null) {
                         botState.sendPublicMessageToPlayer(resistanceMessage.getSender(),
-                                "I don't recognize the player called " + chosenPlayer.getUserName() + ".");
+                                "I don't recognize the player called " + chosenUserName + ".");
                     } else if (botState.isPlayerOnTeam(chosenPlayer)) {
                         //confirm the player isn't already chosen
                         botState.sendPublicMessageToPlayer(resistanceMessage.getSender(),
@@ -113,10 +113,10 @@ public class ResistanceBot {
                         botState.sendPublicMessage("Dropping all members of the current team.");
                         botState.removeAllTeamMembers();
                     } else {
-                        if (!botState.isPlayer(chosenPlayer)) {
+                        if (chosenPlayer == null) {
                             //confirm it is a player in the game
                             botState.sendPublicMessageToPlayer(resistanceMessage.getSender(),
-                                    "I don't recognize the player called " + chosenPlayer.getUserName() + ".");
+                                    "I don't recognize the player called " + chosenUsername + ".");
                         } else if (!botState.isPlayerOnTeam(chosenPlayer)) {
                             //confirm the player is on the team
                             botState.sendPublicMessageToPlayer(resistanceMessage.getSender(),
@@ -299,7 +299,7 @@ public class ResistanceBot {
     }
 
     private void announceLeader() {
-        botState.sendPrompt("Attention @" + botState.getLeaderUserName() + "! You are the current leader. \n" +
+        botState.sendPrompt("Attention " + botState.getLeaderUserName() + "! You are the current leader. \n" +
                 "Pick " + botState.getRequiredTeamSize() + " people to be on the team for the next mission.\n" +
                 "Use 'pick <username>' to add someone to the team. \nUse 'drop <username>' to remove them, " +
                 "or just say 'drop' to remove everyone. \nSay 'done' to lock in your choices and let everyone vote on your choice." +
