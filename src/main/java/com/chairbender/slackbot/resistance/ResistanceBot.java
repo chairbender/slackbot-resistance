@@ -107,7 +107,7 @@ public class ResistanceBot {
                     reportTeamSelection();
 
                 } else if (resistanceMessage.getMessage().startsWith("drop")) {
-                    String chosenUsername = resistanceMessage.getMessage().replace("drop", "").trim().replace("@","");
+                    String chosenUsername = resistanceMessage.getMessage().replace("drop", "").trim();
                     Player chosenPlayer = botState.getPlayerFromNameOrAtMention(chosenUsername);
                     if (chosenUsername.isEmpty()) {
                         botState.sendPublicMessage("Dropping all members of the current team.");
