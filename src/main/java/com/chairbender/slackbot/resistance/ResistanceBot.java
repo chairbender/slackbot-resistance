@@ -152,7 +152,7 @@ public class ResistanceBot {
                             "You have already voted.");
                 } else if (!vote.equalsIgnoreCase("no") && !vote.equalsIgnoreCase("yes")) {
                     botState.sendPrivateMessageToPlayer(sender,
-                            "Please vote only 'yes' or 'no'.");
+                            "I didn't understand that. Please vote only 'yes' or 'no'.");
                 } else {
                     //register the vote
                     botState.placeVote(sender, vote.equalsIgnoreCase("yes"));
@@ -189,7 +189,7 @@ public class ResistanceBot {
                 } else if (!choice.equalsIgnoreCase("pass") && !choice.equalsIgnoreCase("fail")) {
                     //check that they submitted a valid vote
                     botState.sendPrivateMessageToPlayer(sender,
-                            "Please vote only 'pass' or 'fail'.");
+                            "I didn't understand that. Please vote only 'pass' or 'fail'.");
                 } else {
                     //register the vote, ensure that a resistance player can't vote "fail"
                     boolean pass = choice.equalsIgnoreCase("pass");
@@ -317,7 +317,7 @@ public class ResistanceBot {
     private void announceLeader() {
         botState.sendPrompt("Attention " + botState.getLeaderUserName() + "! You are the current leader. \n" +
                 "Pick " + botState.getRequiredTeamSize() + " people to be on the team for the next mission.\n" +
-                "Use 'pick <username>' to add someone to the team. \nUse 'drop <username>' to remove them, " +
+                "Use 'pick @<username>' to add someone to the team. \nUse 'drop @<username>' to remove them, " +
                 "or just say 'drop' to remove everyone. \nSay 'done' to lock in your choices and let everyone vote on your choice." +
                 "\nYou can pick or drop yourself using 'pick me' or 'drop me'.");
     }
