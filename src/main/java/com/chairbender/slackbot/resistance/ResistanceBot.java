@@ -85,7 +85,7 @@ public class ResistanceBot {
             if (resistanceMessage.getSender().getUserName().equals(botState.getLeaderUserName())) {
                 if (resistanceMessage.getMessage().startsWith("pick")) {
                     String chosenUserName = resistanceMessage.getMessage().replace("pick", "").trim();
-                    Player chosenPlayer = botState.getPlayerFromNameOrAtMention(chosenUserName,resistanceMessage.getSender());
+                    Player chosenPlayer = botState.getPlayerFromNameOrAtMention(chosenUserName, resistanceMessage.getSender());
                     //confirm it is a player in the game
                     if (chosenPlayer == null) {
                         botState.sendPublicMessageToPlayer(resistanceMessage.getSender(),
@@ -163,7 +163,15 @@ public class ResistanceBot {
                         voteTeam();
                     }
                 }
-
+            } else {
+                //public message, check if it was a "yes" or "no" and tell the player to send a direct
+                //message
+                if (resistanceMessage.getMessage().trim().equalsIgnoreCase("yes") ||
+                        resistanceMessage.getMessage().trim().equalsIgnoreCase("no")) {
+                    botState.sendPublicMessageToPlayer(resistanceMessage.getSender(),
+                            "please vote only by sending me a Direct Message. Check the left sidebar and click my" +
+                                    " name to send me a message that nobody else can see.");
+                }
             }
         } else if (botState.getState().equals(BotState.State.DO_MISSION)) {
             //check if this is a direct message
@@ -204,6 +212,14 @@ public class ResistanceBot {
                     }
                 }
 
+            } else {
+                //If they accidentally do this in public, at least tell them to send a direct message
+                if (resistanceMessage.getMessage().trim().equalsIgnoreCase("pass") ||
+                        resistanceMessage.getMessage().trim().equalsIgnoreCase("fail")) {
+                    botState.sendPublicMessageToPlayer(resistanceMessage.getSender(),
+                            "please choose only by sending me a Direct Message. Check the left sidebar and click my" +
+                                    " name to send me a message that nobody else can see.");
+                }
             }
         }
     }

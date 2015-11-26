@@ -481,7 +481,7 @@ public class BotState {
      * @param message the message to send them
      */
     public synchronized void sendPublicMessageToPlayer(Player recipient, String message) {
-        session.sendMessage(gameChannel, "@" + recipient.getUserName() + " " + message,null);
+        session.sendMessage(gameChannel, recipient.getUserName() + ", " + message,null);
     }
 
 
