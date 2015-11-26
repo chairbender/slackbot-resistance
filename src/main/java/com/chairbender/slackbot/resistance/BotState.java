@@ -377,17 +377,22 @@ public class BotState {
     /**
      *
      * @param chosenUserNameOrAtMention a username or a special "at mention string" which looks something like
-     *                                 &lt;u12342&gt;
+     *                                 &lt;u12342&gt;. or "me", which will choose the sender
+     * @param sender sender whose player will be returned if the chosen username is "me"
      * @return the player corresponding to that username or at mention. null if not found
      */
-    public Player getPlayerFromNameOrAtMention(String chosenUserNameOrAtMention) {
-        for (Player player : players) {
-            if (player.getUserName().equals(chosenUserNameOrAtMention) ||
-                    player.getUserID().equalsIgnoreCase(GameMessageUtil.atMessageToUID(chosenUserNameOrAtMention))) {
-                return player;
+    public Player getPlayerFromNameOrAtMention(String chosenUserNameOrAtMention, Player sender) {
+        if (chosenUserNameOrAtMention.equals("me")) {
+            return sender;
+        } else {
+            for (Player player : players) {
+                if (player.getUserName().equals(chosenUserNameOrAtMention) ||
+                        player.getUserID().equalsIgnoreCase(GameMessageUtil.atMessageToUID(chosenUserNameOrAtMention))) {
+                    return player;
+                }
             }
+            return null;
         }
-        return null;
     }
 
     /**

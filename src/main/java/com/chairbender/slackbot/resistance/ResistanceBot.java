@@ -85,7 +85,7 @@ public class ResistanceBot {
             if (resistanceMessage.getSender().getUserName().equals(botState.getLeaderUserName())) {
                 if (resistanceMessage.getMessage().startsWith("pick")) {
                     String chosenUserName = resistanceMessage.getMessage().replace("pick", "").trim();
-                    Player chosenPlayer = botState.getPlayerFromNameOrAtMention(chosenUserName);
+                    Player chosenPlayer = botState.getPlayerFromNameOrAtMention(chosenUserName,resistanceMessage.getSender());
                     //confirm it is a player in the game
                     if (!botState.isPlayer(chosenPlayer)) {
                         botState.sendPublicMessageToPlayer(resistanceMessage.getSender(),
@@ -108,7 +108,7 @@ public class ResistanceBot {
 
                 } else if (resistanceMessage.getMessage().startsWith("drop")) {
                     String chosenUsername = resistanceMessage.getMessage().replace("drop", "").trim();
-                    Player chosenPlayer = botState.getPlayerFromNameOrAtMention(chosenUsername);
+                    Player chosenPlayer = botState.getPlayerFromNameOrAtMention(chosenUsername,resistanceMessage.getSender());
                     if (chosenUsername.isEmpty()) {
                         botState.sendPublicMessage("Dropping all members of the current team.");
                         botState.removeAllTeamMembers();
@@ -303,8 +303,7 @@ public class ResistanceBot {
                 "Pick " + botState.getRequiredTeamSize() + " people to be on the team for the next mission.\n" +
                 "Use 'pick <username>' to add someone to the team. \nUse 'drop <username>' to remove them, " +
                 "or just say 'drop' to remove everyone. \nSay 'done' to lock in your choices and let everyone vote on your choice." +
-                "\nRemember, you " +
-                "can pick yourself as a team member.");
+                "\nYou can pick or drop yourself using 'pick me' or 'drop me'.");
     }
 
     /**
