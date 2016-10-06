@@ -90,7 +90,7 @@ public class SlackBotResistance {
                             }
                         } else {
                             session.sendMessage(event.getChannel(), "Say '" + botName + " start' to start a game of The Resistance.\n" +
-                                    "Say 'resistbot help' for a list of commands.", null);
+                                    "Say '" + botName + " help' for a list of commands.", null);
                         }
                     }
                 } else {
